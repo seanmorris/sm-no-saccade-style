@@ -34,6 +34,17 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	, ...(cond ? list : [])
 	, b
 ];`
+		, `const x = [
+	'a', b
+];`
+		, `const x = [
+	0.0, 0.0
+	, 1.0, 0.0
+	, 0.0, 1.0
+	, 0.0, 1.0
+	, 1.0, 0.0
+	, 1.0, 1.0
+];`
 		, `const [
 	a
 	, ...rest
@@ -99,16 +110,6 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 		}
 		, {
 			code: `const x = [
-	'a', b
-];`
-			, output: null
-			, errors: [
-				{ messageId: 'expectedLeadingComma' }
-				, { messageId: 'unexpectedTrailingComma' }
-			]
-		}
-		, {
-			code: `const x = [
 	a,
 	...(cond ? list : []),
 	b
@@ -123,6 +124,17 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 				, { messageId: 'unexpectedTrailingComma' }
 				, { messageId: 'expectedLeadingComma' }
 				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	reallyLongIdentifierAlpha, reallyLongIdentifierBeta, reallyLongIdentifierGammaPlus
+	, reallyLongIdentifierDelta, reallyLongIdentifierEpsilon, reallyLongIdentifierZeta
+];`
+			, output: null
+			, errors: [
+				{ messageId: 'groupedRowTooWide' }
+				, { messageId: 'groupedRowTooWide' }
 			]
 		}
 	]
