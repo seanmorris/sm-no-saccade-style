@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/no-trailing-whitespace.js';
+import rule from '../source/rules/no-trailing-whitespace.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

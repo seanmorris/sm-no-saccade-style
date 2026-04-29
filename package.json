@@ -34,10 +34,10 @@
     "source/rules"
   ],
   "scripts": {
-    "lint": "eslint index.js source/**/*.js eslint.config.js",
-    "lint:fix": "eslint index.js source/**/*.js eslint.config.js --fix",
-    "test": "node ./source/tests/run.js",
-    "coverage": "c8 --reporter=text-summary --reporter=text node ./source/tests/run.js",
+    "lint": "eslint index.js source/**/*.js test/**/*.js eslint.config.js",
+    "lint:fix": "eslint index.js source/**/*.js test/**/*.js eslint.config.js --fix",
+    "test": "node ./test/run.js",
+    "coverage": "c8 --reporter=text-summary --reporter=text node ./test/run.js",
     "lint:fixtures": "eslint test-fixtures --fix"
   },
   "dependencies": {

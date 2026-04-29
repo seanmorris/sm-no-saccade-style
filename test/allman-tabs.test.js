@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/allman-tabs.js';
+import rule from '../source/rules/allman-tabs.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

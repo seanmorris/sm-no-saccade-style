@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/no-space-control-paren.js';
+import rule from '../source/rules/no-space-control-paren.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

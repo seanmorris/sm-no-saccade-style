@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { ESLint } from 'eslint';
 
-import smNoSaccadeStyle from '../index.js';
+import smNoSaccadeStyle from '../source/index.js';
 
 const eslint = new ESLint({
 	overrideConfigFile: true

@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/leading-comma-lists.js';
+import rule from '../source/rules/leading-comma-lists.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

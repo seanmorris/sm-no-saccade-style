@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/final-comma-line.js';
+import rule from '../source/rules/final-comma-line.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

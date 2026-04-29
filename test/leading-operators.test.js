@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/leading-operators.js';
+import rule from '../source/rules/leading-operators.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {

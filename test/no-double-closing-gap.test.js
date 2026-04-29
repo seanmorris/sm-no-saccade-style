@@ -1,6 +1,6 @@
 import { RuleTester } from 'eslint';
 
-import rule from '../rules/no-double-closing-gap.js';
+import rule from '../source/rules/no-double-closing-gap.js';
 
 const ruleTester = new RuleTester({
 	languageOptions: {
