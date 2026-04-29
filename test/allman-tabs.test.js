@@ -20,6 +20,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
 		, "class X\n{\n\tdestroy(entity){}\n}"
+		, "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){}\n}"
 		, "if(foo){}"
 		, "if(foo) bar();"
 		, "if(foo)\nbar();"
@@ -27,6 +28,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n){\n\tworld.motionGraph.delete(this);\n}"
 		, "if(graphs)\nfor(const graph of graphs)\n{\n\tgraph.delete(entity);\n}"
 		, "if(graphs)\n\tfor(const graph of graphs)\n\t{\n\t\tgraph.delete(entity);\n\t}"
+		, "new Set(this.mapRenderers.keys())\n.difference(visibleMaps)\n.forEach(map => {\n\tthis.mapRenderers.delete(map);\n\tmap.visible = false;\n});"
+		, "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
 	]
 	, invalid: [
 		{
@@ -78,9 +81,24 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 			, errors: [{ messageId: 'expectedAllmanOpen' }]
 		}
 		, {
+			code: "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t})\n\t{\n\t\tbar();\n\t}\n}"
+			, output: "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){\n\t\tbar();\n\t}\n}"
+			, errors: [{ messageId: 'unexpectedMultilineFunctionOpen' }]
+		}
+		, {
 			code: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n)\n{\n\tworld.motionGraph.delete(this);\n}"
 			, output: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n){\n\tworld.motionGraph.delete(this);\n}"
 			, errors: [{ messageId: 'unexpectedMultilineControlOpen' }]
+		}
+		, {
+			code: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n\t));"
+			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
+			, errors: [{ messageId: 'mixedClosingRays' }]
+		}
+		, {
+			code: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n));"
+			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
+			, errors: [{ messageId: 'mixedClosingRays' }]
 		}
 		, {
 			code: "switch(value) {\n\tcase 1:\n\t\tbreak;\n}"

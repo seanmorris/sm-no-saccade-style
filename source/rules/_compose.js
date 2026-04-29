@@ -9,6 +9,24 @@ export function withOptions(context, options)
 	});
 }
 
+export function withReportFilter(context, filter)
+{
+	return Object.create(context, {
+		report: {
+			value(descriptor) {
+				if(filter(descriptor) === false)
+				{
+					return;
+				}
+
+				return context.report(descriptor);
+			}
+			, enumerable: true
+			, configurable: true
+		}
+	});
+}
+
 export function composeListeners(...listenerMaps)
 {
 	const merged = {};
