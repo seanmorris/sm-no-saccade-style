@@ -35,8 +35,7 @@ export default {
 			, unexpectedTrailingComma: 'Trailing comma should not stay on the previous item line in a multiline list.'
 		}
 	}
-	, create(context)
-	{
+	, create(context) {
 		const sourceCode = context.sourceCode;
 
 		function checkNode(node)

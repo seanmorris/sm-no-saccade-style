@@ -16,7 +16,6 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			code: `const x = [
 	'a'
 	, 'b'
-
 ];`
 		}
 		, {
@@ -50,7 +49,7 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			, output: `const x = [
 	'a'
 	, 'b'
-
+	,
 ];`
 			, errors: [{ messageId: 'expectedFinalCommaLine' }]
 		}
@@ -62,7 +61,7 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			, output: `const x = [
 	'a'
 	, 'b'
-
+	,
 ];`
 			, options: [{ mode: 'require' }]
 			, errors: [{ messageId: 'expectedFinalCommaLine' }]
@@ -71,7 +70,7 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			code: `const x = [
 	'a'
 	, 'b'
-
+	,
 ];`
 			, output: `const x = [
 	'a'

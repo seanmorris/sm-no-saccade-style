@@ -35,8 +35,7 @@ export default {
 			unexpectedSpace: 'Control keywords should hug the opening parenthesis.'
 		}
 	}
-	, create(context)
-	{
+	, create(context) {
 		const sourceCode = context.sourceCode;
 
 		function checkNode(node)

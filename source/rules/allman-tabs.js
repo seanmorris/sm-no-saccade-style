@@ -29,8 +29,7 @@ export default {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.'
 		}
 	}
-	, create(context)
-	{
+	, create(context) {
 		const sourceCode = context.sourceCode;
 		const indentListeners = indentRule.create(withOptions(context, ['tab']));
 		const noMixedListeners = noMixedSpacesAndTabsRule.create(withOptions(context, ['smart-tabs']));

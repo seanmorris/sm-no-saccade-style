@@ -71,8 +71,7 @@ export default {
 			, unexpectedFinalCommaLine: 'Final comma-only line is not allowed.'
 		}
 	}
-	, create(context)
-	{
+	, create(context) {
 		const sourceCode = context.sourceCode;
 		const options = { ...DEFAULT_OPTIONS, ...(context.options[0] || {}) };
 

@@ -22,8 +22,7 @@ export default {
 			description: 'Enforce operator-first continuation lines.'
 		}
 	}
-	, create(context)
-	{
+	, create(context) {
 		const effectiveOptions = context.options.length > 0 ? context.options : defaultOptions;
 
 		return baseRule.create(withOptions(context, effectiveOptions));
