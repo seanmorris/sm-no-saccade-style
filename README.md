@@ -1,5 +1,10 @@
 # sm-no-saccade-style
 
+[![npm version](https://img.shields.io/npm/v/sm-no-saccade-style?style=for-the-badge)](https://www.npmjs.com/package/sm-no-saccade-style)
+[![npm license](https://img.shields.io/npm/l/sm-no-saccade-style?style=for-the-badge)](https://www.npmjs.com/package/sm-no-saccade-style)
+[![CI](https://img.shields.io/github/actions/workflow/status/seanmorris/sm-no-saccade-style/ci.yml?branch=master&style=for-the-badge)](https://github.com/seanmorris/sm-no-saccade-style/actions/workflows/ci.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/seanmorris/sm-no-saccade-style?style=for-the-badge)](https://codecov.io/gh/seanmorris/sm-no-saccade-style)
+
 ## Why saccades matter
 
 When reading code, the eye does not move smoothly across the page. It jumps in quick motions called saccades, then pauses briefly to take in detail.
