@@ -28,5 +28,4 @@ ruleTester.run('sm-no-saccade-style/leading-operators', rule, {
 			, errors: [{ messageId: 'operatorAtBeginning' }]
 		}
 	]
-
 });

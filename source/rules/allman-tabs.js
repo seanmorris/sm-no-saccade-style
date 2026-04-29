@@ -5,13 +5,39 @@ import { composeListeners, withOptions } from './_compose.js';
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
 
-function isInlineFunctionBlock(node)
+function isInlineBody(node)
 {
-	return node.type === 'BlockStatement'
-		&& (
-			node.parent?.type === 'ArrowFunctionExpression'
-			|| node.parent?.type === 'FunctionExpression'
-		);
+	if(node.type === 'ClassBody')
+	{
+		return node.parent?.type === 'ClassExpression';
+	}
+
+	if(node.type !== 'BlockStatement')
+	{
+		return false;
+	}
+
+	if(node.parent?.type === 'ArrowFunctionExpression')
+	{
+		return true;
+	}
+
+	if(node.parent?.type !== 'FunctionExpression')
+	{
+		return false;
+	}
+
+	if(node.parent.parent?.type === 'MethodDefinition')
+	{
+		return node.parent.parent.parent?.parent?.type === 'ClassExpression';
+	}
+
+	if(node.parent.parent?.type === 'Property' && node.parent.parent.method)
+	{
+		return node.parent.parent.parent?.type === 'ObjectExpression';
+	}
+
+	return true;
 }
 
 export default {
@@ -23,7 +49,7 @@ export default {
 			...indentRule.meta.messages,
 			...noMixedSpacesAndTabsRule.meta.messages,
 			expectedAllmanOpen: 'Opening brace should be on its own line.'
-			, unexpectedInlineFunctionAllmanOpen: 'Inline function opening brace should stay on the same line as the function head.'
+			, unexpectedInlineAllmanOpen: 'Inline opening brace should stay on the same line as the head.'
 		}
 		, docs: {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.'
@@ -51,9 +77,9 @@ export default {
 			}
 
 			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace, { includeComments: true }).some((token) => token.type === 'Block' || token.type === 'Line');
-			const inlineFunctionBlock = isInlineFunctionBlock(node);
+			const inlineBody = isInlineBody(node);
 
-			if(inlineFunctionBlock)
+			if(inlineBody)
 			{
 				if(previousToken.loc.end.line === openingBrace.loc.start.line)
 				{
@@ -63,7 +89,7 @@ export default {
 				context.report({
 					node
 					, loc: openingBrace.loc
-					, messageId: 'unexpectedInlineFunctionAllmanOpen'
+					, messageId: 'unexpectedInlineAllmanOpen'
 					, fix: hasComments
 						? null
 						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], ' ')
@@ -105,7 +131,7 @@ export default {
 
 			const between = sourceCode.text.slice(previousToken.range[1], openingBrace.range[0]);
 
-			if(isInlineFunctionBlock(node))
+			if(isInlineBody(node))
 			{
 				return;
 			}

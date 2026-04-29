@@ -30,5 +30,4 @@ ruleTester.run('sm-no-saccade-style/no-space-control-paren', rule, {
 			, errors: [{ messageId: 'unexpectedSpace' }]
 		}
 	]
-
 });

@@ -80,5 +80,4 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			, errors: [{ messageId: 'unexpectedFinalCommaLine' }]
 		}
 	]
-
 });

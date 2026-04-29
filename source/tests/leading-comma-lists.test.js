@@ -52,5 +52,4 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			]
 		}
 	]
-
 });

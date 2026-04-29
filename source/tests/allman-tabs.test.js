@@ -16,6 +16,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "const short\t    = 1;\nconst longerName = 2;"
 		, "promise.then(value => {\n\tbar(value);\n});"
 		, "const x = function() {\n\tbar();\n};"
+		, "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 	]
 	, invalid: [
 		{
@@ -34,13 +35,17 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, {
 			code: "promise.then(value =>\n{\n\tbar(value);\n});"
 			, output: "promise.then(value => {\n\tbar(value);\n});"
-			, errors: [{ messageId: 'unexpectedInlineFunctionAllmanOpen' }]
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
 		}
 		, {
 			code: "const x = function()\n{\n\tbar();\n};"
 			, output: "const x = function() {\n\tbar();\n};"
-			, errors: [{ messageId: 'unexpectedInlineFunctionAllmanOpen' }]
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
+		}
+		, {
+			code: "const X = class\n{\n\tmethod() {\n\t\tbar();\n\t}\n};"
+			, output: "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
 		}
 	]
-
 });

@@ -4,10 +4,8 @@ export function withOptions(context, options)
 		options: {
 			value: options
 			, enumerable: true
-			, configurable: true
-		
-		}
-	
+			, configurable: true		
+		}	
 	});
 }
 
