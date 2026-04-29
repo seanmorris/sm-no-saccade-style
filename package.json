@@ -12,6 +12,7 @@
     "source"
   ],
   "scripts": {
+    "lint": "eslint index.js source/**/*.js eslint.config.js",
     "test": "node ./source/tests/run.js",
     "lint:fixtures": "eslint test-fixtures --fix"
   },
