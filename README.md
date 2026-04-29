@@ -39,29 +39,83 @@ This style favors:
 ### Conventional
 
 ```js
-const value = source ||
-	fallback ||
-	defaultValue;
+const visibleMaps = maps.filter(map => map.visible && map.ready || map === activeMap).map(map => ({
+	key: map.id,
+	label: map.name,
+	bounds: [map.x + camera.x, map.y + camera.y, map.width + marginX, map.height + marginY],
+	layers: map.layers.filter(layer => layer.visible && layer.depth > minDepth).map(layer => ({
+		name: layer.name,
+		opacity: layer.opacity,
+		tiles: layer.tiles.filter(tile => tile.index !== 0 && tile.visible).map(tile => ({
+			id: tile.id,
+			src: tile.src,
+			position: [tile.x + offsetX, tile.y + offsetY]
+		}))
+	}))
+}));
 
-const list = [
-	'a',
-	'b',
-	'c',
-];
+if (motionParent
+	&& !world.motionGraph.getParent(motionParent)
+	&& !maps.has(motionParent)
+	&& (state.changed || queue.length && !paused))
+{
+	world.motionGraph.delete(this);
+}
 ```
 
 ### sm-no-saccade-style
 
 ```js
-const value = source
-	|| fallback
-	|| defaultValue;
+const visibleMaps = maps
+	.filter(map =>
+		map.visible
+		&& map.ready
+		|| map === activeMap
+	)
+	.map(map => ({
+		key: map.id
+		, label: map.name
+		, bounds: [
+			map.x + camera.x
+			, map.y + camera.y
+			, map.width + marginX
+			, map.height + marginY
+		]
+		, layers: map.layers
+			.filter(layer =>
+				layer.visible
+				&& layer.depth > minDepth
+			)
+			.map(layer => ({
+				name: layer.name
+				, opacity: layer.opacity
+				, tiles: layer.tiles
+					.filter(tile =>
+						tile.index !== 0
+						&& tile.visible
+					)
+					.map(tile => ({
+						id: tile.id
+						, src: tile.src
+						, position: [
+							tile.x + offsetX
+							, tile.y + offsetY
+						]
+					}))
+			}))
+	}));
 
-const list = [
-	'a'
-	, 'b'
-	, 'c'
-];
+if(motionParent
+	&& !world.motionGraph.getParent(motionParent)
+	&& !maps.has(motionParent)
+	&& (
+		state.changed
+		|| queue.length
+		&& !paused
+	)
+){
+	world.motionGraph.delete(this);
+}
 ```
 
 ## Usage

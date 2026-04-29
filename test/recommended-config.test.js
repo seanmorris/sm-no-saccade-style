@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { ESLint } from 'eslint';
 
@@ -41,6 +42,14 @@ const [singleLineControlResult] = await eslint.lintText(`if(foo)\n\tbar();\n`, {
 const [fixedJsdocResult] = await fixingEslint.lintText(`/**\n * Keeps docs.\n */\nfunction example() {\n\treturn {\n\t\tvalue: 1\n\t};\n}\n`, {
 	filePath: 'fixture-fix.js'
 });
+const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+const readmeExampleMatch = readme.match(/### sm-no-saccade-style\s+```js\n([\s\S]*?)\n```/u);
+
+assert.ok(readmeExampleMatch, 'Expected to find the sm-no-saccade-style README example.');
+
+const [readmeExampleResult] = await eslint.lintText(`${readmeExampleMatch[1]}\n`, {
+	filePath: 'readme-example.js'
+});
 
 assert.equal(jsResult.messages.length, 1);
 assert.equal(jsResult.messages[0].ruleId, '@stylistic/eol-last');
@@ -53,6 +62,7 @@ assert.equal(semiResult.messages[0].ruleId, '@stylistic/semi');
 
 assert.equal(controlChainResult.messages.length, 0);
 assert.equal(singleLineControlResult.messages.length, 0);
+assert.equal(readmeExampleResult.messages.length, 0);
 
 assert.match(fixedJsdocResult.output, /\/\*\*\n \* Keeps docs\.\n \*\//u);
 assert.match(fixedJsdocResult.output, /function example\(\)\n\{/u);
