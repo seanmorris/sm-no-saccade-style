@@ -29,6 +29,15 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 		, `const x = [
 	...rest
 ];`
+		, `const x = [
+	a
+	, ...(cond ? list : [])
+	, b
+];`
+		, `const [
+	a
+	, ...rest
+] = source;`
 		, `const x = {
 	...rest
 };`
@@ -95,6 +104,24 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, output: null
 			, errors: [
 				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	a,
+	...(cond ? list : []),
+	b
+];`
+			, output: `const x = [
+	a
+	, ...(cond ? list : [])
+	, b
+];`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
 				, { messageId: 'unexpectedTrailingComma' }
 			]
 		}

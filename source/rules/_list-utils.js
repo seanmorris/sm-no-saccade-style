@@ -2,7 +2,7 @@ export function getListItems(node)
 {
 	if(node.type === 'ArrayExpression' || node.type === 'ArrayPattern')
 	{
-		return node.elements.filter((element) => element && element.type !== 'SpreadElement' && element.type !== 'RestElement');
+		return node.elements.filter(Boolean);
 	}
 
 	return node.properties.filter((property) => property.type === 'Property');
