@@ -26,6 +26,13 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			options: [{ mode: 'allow' }],
 		},
 		{
+			code: `const x = {
+	a: 1
+	, b: 2
+};`,
+			options: [{ mode: 'allow' }],
+		},
+		{
 			code: `const x = [
 	'a'
 	, 'b'
