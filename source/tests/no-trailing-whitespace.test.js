@@ -25,5 +25,14 @@ ruleTester.run('sm-no-saccade-style/no-trailing-whitespace', rule, {
 			, output: "const x = `line with spaces   \nnext`;\n"
 			, errors: [{ messageId: 'unexpectedTrailingWhitespace' }]
 		}
+		, {
+			code: "/**   \n * Docs stay here.   \n */   \nconst x = 1;\n"
+			, output: "/**\n * Docs stay here.\n */\nconst x = 1;\n"
+			, errors: [
+				{ messageId: 'unexpectedTrailingWhitespace' }
+				, { messageId: 'unexpectedTrailingWhitespace' }
+				, { messageId: 'unexpectedTrailingWhitespace' }
+			]
+		}
 	]
 });
