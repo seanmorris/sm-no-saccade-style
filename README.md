@@ -10,16 +10,6 @@ That repeated scanning adds friction. It slows reacquisition after every line br
 
 sm-no-saccade-style is built to reduce that cost. It pulls high-signal syntax back toward the left side of the line so continuation structure is visible earlier, with less hunting and fewer long corrective eye movements.
 
-An ESLint style plugin optimized to reduce visual scan friction.
-
-Traditional formatting scatters structural punctuation across the right edge of code, forcing repeated eye jumps (saccades) to locate commas, operators, and flow markers.
-
-sm-no-saccade-style moves syntax to the left rail so code structure is visible immediately at line reacquisition points.
-
-Less hunting. Faster parsing. Cleaner continuation flow.
-
-Designed for developers who read vertically and edit multiline structures frequently.
-
 ## Design
 
 Put control symbols where the eye naturally reacquires the next line.

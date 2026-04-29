@@ -46,6 +46,7 @@ plugin.configs.recommended = [
 					':': 'before',
 				},
 			}],
+			'@stylistic/eol-last': ['error', 'always'],
 			'@stylistic/indent': ['error', 'tab'],
 		},
 	},
