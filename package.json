@@ -37,7 +37,7 @@
     "lint": "eslint index.js source/**/*.js test/**/*.js eslint.config.js",
     "lint:fix": "eslint index.js source/**/*.js test/**/*.js eslint.config.js --fix",
     "test": "node ./test/run.js",
-    "coverage": "c8 --reporter=text-summary --reporter=text node ./test/run.js",
+    "coverage": "c8 --reporter=text-summary --reporter=text --reporter=lcov node ./test/run.js",
     "lint:fixtures": "eslint test-fixtures --fix"
   },
   "dependencies": {

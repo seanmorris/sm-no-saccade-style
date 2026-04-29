@@ -54,6 +54,7 @@ plugin.configs.recommended = [
 					':': 'before',
 				},
 			}],
+			'@stylistic/semi': ['error', 'always'],
 			'@stylistic/eol-last': ['error', 'always'],
 		},
 	},
