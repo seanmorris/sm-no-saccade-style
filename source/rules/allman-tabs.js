@@ -1,9 +1,19 @@
 import stylistic from '@stylistic/eslint-plugin';
 
 import { composeListeners, withOptions } from './_compose.js';
+import { indentOptions } from './_indent-options.js';
 
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
+const MULTILINE_CONTROL_HEAD_TYPES = new Set([
+	'ForInStatement'
+	, 'ForOfStatement'
+	, 'ForStatement'
+	, 'IfStatement'
+	, 'SwitchStatement'
+	, 'WhileStatement'
+	, 'WithStatement'
+]);
 
 function isInlineBody(node)
 {
@@ -54,6 +64,41 @@ function getOpeningBraceToken(sourceCode, node)
 	return sourceCode.getFirstToken(node);
 }
 
+function isEmptyBody(node)
+{
+	if(node.type === 'ClassBody')
+	{
+		return node.body.length === 0;
+	}
+
+	if(node.type === 'SwitchStatement')
+	{
+		return node.cases.length === 0;
+	}
+
+	return node.type === 'BlockStatement' && node.body.length === 0;
+}
+
+function hasMultilineControlHead(node)
+{
+	if(node.type === 'SwitchStatement')
+	{
+		return node.loc.start.line !== node.discriminant.loc.end.line;
+	}
+
+	if(node.type !== 'BlockStatement' || !MULTILINE_CONTROL_HEAD_TYPES.has(node.parent?.type))
+	{
+		return false;
+	}
+
+	const headEndNode = node.parent.test ?? node.parent.right ?? node.parent.discriminant ?? node.parent.object;
+
+	return node.type === 'BlockStatement'
+		&& !!headEndNode
+		&& node.parent.loc.start.line !== headEndNode.loc.end.line
+		&& node.parent.loc.start.line !== node.loc.start.line;
+}
+
 export default {
 	meta: {
 		type: 'layout'
@@ -64,6 +109,7 @@ export default {
 			...noMixedSpacesAndTabsRule.meta.messages,
 			expectedAllmanOpen: 'Opening brace should be on its own line.'
 			, unexpectedInlineAllmanOpen: 'Inline opening brace should stay on the same line as the head.'
+			, unexpectedMultilineControlOpen: 'Multiline control heads should keep the opening brace on the same line as the closing parenthesis.'
 		}
 		, docs: {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.'
@@ -71,7 +117,7 @@ export default {
 	}
 	, create(context) {
 		const sourceCode = context.sourceCode;
-		const indentListeners = indentRule.create(withOptions(context, ['tab']));
+		const indentListeners = indentRule.create(withOptions(context, indentOptions));
 		const noMixedListeners = noMixedSpacesAndTabsRule.create(withOptions(context, ['smart-tabs']));
 
 		function checkOpeningBrace(node)
@@ -94,6 +140,32 @@ export default {
 
 			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace, { includeComments: true }).some((token) => token.type === 'Block' || token.type === 'Line');
 			const inlineBody = isInlineBody(node);
+			const emptyBody = isEmptyBody(node);
+			const multilineControlHead = hasMultilineControlHead(node);
+
+			if(emptyBody && previousToken.loc.end.line === openingBrace.loc.start.line)
+			{
+				return;
+			}
+
+			if(multilineControlHead)
+			{
+				if(previousToken.loc.end.line === openingBrace.loc.start.line)
+				{
+					return;
+				}
+
+				context.report({
+					node
+					, loc: openingBrace.loc
+					, messageId: 'unexpectedMultilineControlOpen'
+					, fix: hasComments
+						? null
+						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], '')
+				});
+
+				return;
+			}
 
 			if(inlineBody)
 			{

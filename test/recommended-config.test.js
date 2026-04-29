@@ -35,6 +35,8 @@ const fixingEslint = new ESLint({
 
 const [jsResult] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js' });
 const [tsResult] = await eslint.lintText('const x: number = 1;', { filePath: 'fixture.ts' });
+const [controlChainResult] = await eslint.lintText(`if(graphs)\nfor(const graph of graphs)\n{\n\tgraph.delete(entity);\n}\n`, { filePath: 'fixture-control-chain.js' });
+const [singleLineControlResult] = await eslint.lintText(`if(foo)\n\tbar();\n`, { filePath: 'fixture-single-control.js' });
 const [fixedJsdocResult] = await fixingEslint.lintText(`/**\n * Keeps docs.\n */\nfunction example() {\n\treturn {\n\t\tvalue: 1\n\t};\n}\n`, {
 	filePath: 'fixture-fix.js'
 });
@@ -44,6 +46,9 @@ assert.equal(jsResult.messages[0].ruleId, '@stylistic/eol-last');
 
 assert.equal(tsResult.messages.length, 1);
 assert.equal(tsResult.messages[0].ruleId, '@stylistic/eol-last');
+
+assert.equal(controlChainResult.messages.length, 0);
+assert.equal(singleLineControlResult.messages.length, 0);
 
 assert.match(fixedJsdocResult.output, /\/\*\*\n \* Keeps docs\.\n \*\//u);
 assert.match(fixedJsdocResult.output, /function example\(\)\n\{/u);

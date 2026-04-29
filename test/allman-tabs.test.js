@@ -19,6 +19,14 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "const x = {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
+		, "class X\n{\n\tdestroy(entity){}\n}"
+		, "if(foo){}"
+		, "if(foo) bar();"
+		, "if(foo)\nbar();"
+		, "if(foo)\n\tbar();"
+		, "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n){\n\tworld.motionGraph.delete(this);\n}"
+		, "if(graphs)\nfor(const graph of graphs)\n{\n\tgraph.delete(entity);\n}"
+		, "if(graphs)\n\tfor(const graph of graphs)\n\t{\n\t\tgraph.delete(entity);\n\t}"
 	]
 	, invalid: [
 		{
@@ -63,6 +71,16 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 			code: "if(foo) /* keep comment */ {\n\tbar();\n}"
 			, output: null
 			, errors: [{ messageId: 'expectedAllmanOpen' }]
+		}
+		, {
+			code: "class X\n{\n\tdestroy(entity){\n\t\tbar();\n\t}\n}"
+			, output: "class X\n{\n\tdestroy(entity)\n{\n\t\tbar();\n\t}\n}"
+			, errors: [{ messageId: 'expectedAllmanOpen' }]
+		}
+		, {
+			code: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n)\n{\n\tworld.motionGraph.delete(this);\n}"
+			, output: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n){\n\tworld.motionGraph.delete(this);\n}"
+			, errors: [{ messageId: 'unexpectedMultilineControlOpen' }]
 		}
 		, {
 			code: "switch(value) {\n\tcase 1:\n\t\tbreak;\n}"

@@ -2,6 +2,7 @@ import stylistic from '@stylistic/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
 import allmanTabs from './rules/allman-tabs.js';
+import { indentOptions } from './rules/_indent-options.js';
 import finalCommaLine from './rules/final-comma-line.js';
 import leadingCommaLists from './rules/leading-comma-lists.js';
 import leadingOperators from './rules/leading-operators.js';
@@ -54,7 +55,7 @@ plugin.configs.recommended = [
 				},
 			}],
 			'@stylistic/eol-last': ['error', 'always'],
-			'@stylistic/indent': ['error', 'tab'],
+			'@stylistic/indent': ['error', ...indentOptions],
 		},
 	},
 	{
