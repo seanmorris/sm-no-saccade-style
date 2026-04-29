@@ -60,6 +60,11 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 			, errors: [{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }]
 		}
 		, {
+			code: "if(foo) /* keep comment */ {\n\tbar();\n}"
+			, output: null
+			, errors: [{ messageId: 'expectedAllmanOpen' }]
+		}
+		, {
 			code: "switch(value) {\n\tcase 1:\n\t\tbreak;\n}"
 			, output: "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
 			, errors: [{ messageId: 'expectedAllmanOpen' }]

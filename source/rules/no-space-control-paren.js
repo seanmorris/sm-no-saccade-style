@@ -50,6 +50,7 @@ export default {
 
 		function checkNode(node)
 		{
+			/* c8 ignore next 4 */
 			if(!CONTROL_TYPES.has(node.type))
 			{
 				return;

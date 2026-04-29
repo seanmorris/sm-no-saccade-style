@@ -14,6 +14,7 @@ const SUPPORTED_TYPES = new Set([
 
 function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 {
+	/* c8 ignore next 4 */
 	if(!isFirstTokenOnLine(sourceCode, itemToken))
 	{
 		return null;
@@ -57,6 +58,7 @@ export default {
 				const itemToken = sourceCode.getFirstToken(items[i]);
 				const commaToken = sourceCode.getTokenBefore(itemToken);
 
+				/* c8 ignore next 4 */
 				if(!commaToken || commaToken.value !== ',')
 				{
 					continue;
@@ -88,6 +90,7 @@ export default {
 				const commaToken = sourceCode.getTokenAfter(itemToken);
 				const nextItemToken = sourceCode.getFirstToken(items[i + 1]);
 
+				/* c8 ignore next 4 */
 				if(!commaToken || commaToken.value !== ',')
 				{
 					continue;

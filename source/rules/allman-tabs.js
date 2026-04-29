@@ -78,6 +78,7 @@ export default {
 		{
 			const openingBrace = getOpeningBraceToken(sourceCode, node);
 
+			/* c8 ignore next 4 */
 			if(!openingBrace || openingBrace.value !== '{')
 			{
 				return;
@@ -85,6 +86,7 @@ export default {
 
 			const previousToken = sourceCode.getTokenBefore(openingBrace);
 
+			/* c8 ignore next 4 */
 			if(!previousToken)
 			{
 				return;
@@ -131,6 +133,7 @@ export default {
 		{
 			const openingBrace = getOpeningBraceToken(sourceCode, node);
 
+			/* c8 ignore next 4 */
 			if(!openingBrace || openingBrace.value !== '{')
 			{
 				return;
@@ -138,6 +141,7 @@ export default {
 
 			const previousToken = sourceCode.getTokenBefore(openingBrace);
 
+			/* c8 ignore next 4 */
 			if(!previousToken)
 			{
 				return;

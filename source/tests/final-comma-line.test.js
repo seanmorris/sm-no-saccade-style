@@ -47,6 +47,10 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 			, options: [{ mode: 'forbid' }]
 		}
 		, {
+			code: `const x = ['a'];`
+			, options: [{ mode: 'allow' }]
+		}
+		, {
 			code: `const x = [
 
 ];`
