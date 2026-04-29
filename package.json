@@ -35,6 +35,7 @@
   ],
   "scripts": {
     "lint": "eslint index.js source/**/*.js eslint.config.js",
+    "lint:fix": "eslint index.js source/**/*.js eslint.config.js --fix",
     "test": "node ./source/tests/run.js",
     "lint:fixtures": "eslint test-fixtures --fix"
   },

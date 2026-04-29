@@ -27,5 +27,4 @@ export default {
 
 		return baseRule.create(withOptions(context, effectiveOptions));
 	}
-
 };

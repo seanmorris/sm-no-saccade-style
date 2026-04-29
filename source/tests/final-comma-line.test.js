@@ -7,7 +7,6 @@ const ruleTester = new RuleTester({
 		ecmaVersion: 2022
 		, sourceType: 'module'
 	}
-
 });
 
 ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {

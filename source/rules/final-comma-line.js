@@ -164,5 +164,4 @@ export default {
 			, ObjectPattern: checkNode
 		};
 	}
-
 };
