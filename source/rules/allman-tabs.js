@@ -40,6 +40,20 @@ function isInlineBody(node)
 	return true;
 }
 
+function getOpeningBraceToken(sourceCode, node)
+{
+	if(node.type === 'SwitchStatement')
+	{
+		const rightParen = sourceCode.getTokenAfter(node.discriminant, (token) => token.value === ')');
+
+		return rightParen
+			? sourceCode.getTokenAfter(rightParen, (token) => token.value === '{')
+			: null;
+	}
+
+	return sourceCode.getFirstToken(node);
+}
+
 export default {
 	meta: {
 		type: 'layout'
@@ -62,7 +76,7 @@ export default {
 
 		function checkOpeningBrace(node)
 		{
-			const openingBrace = sourceCode.getFirstToken(node);
+			const openingBrace = getOpeningBraceToken(sourceCode, node);
 
 			if(!openingBrace || openingBrace.value !== '{')
 			{
@@ -115,7 +129,7 @@ export default {
 
 		function stripSpaceBeforeOpeningBrace(node)
 		{
-			const openingBrace = sourceCode.getFirstToken(node);
+			const openingBrace = getOpeningBraceToken(sourceCode, node);
 
 			if(!openingBrace || openingBrace.value !== '{')
 			{

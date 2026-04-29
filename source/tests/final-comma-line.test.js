@@ -52,6 +52,12 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 ];`
 			, options: [{ mode: 'require' }]
 		}
+		, {
+			code: `const x = {
+	...rest
+};`
+			, options: [{ mode: 'require' }]
+		}
 	]
 	, invalid: [
 		{

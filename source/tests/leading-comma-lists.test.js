@@ -26,6 +26,12 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	// keep comment
 	, b
 } = source;`
+		, `const x = [
+	...rest
+];`
+		, `const x = {
+	...rest
+};`
 	]
 	, invalid: [
 		{
@@ -75,6 +81,16 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	'a',
 	// keep comment
 	'b'
+];`
+			, output: null
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	'a', b
 ];`
 			, output: null
 			, errors: [

@@ -18,6 +18,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "const x = {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
+		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
 	]
 	, invalid: [
 		{
@@ -57,6 +58,16 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 			code: "if(foo)  \n{\n\tbar();\n}"
 			, output: "if(foo)\n{\n\tbar();\n}"
 			, errors: [{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }]
+		}
+		, {
+			code: "switch(value) {\n\tcase 1:\n\t\tbreak;\n}"
+			, output: "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
+			, errors: [{ messageId: 'expectedAllmanOpen' }]
+		}
+		, {
+			code: "promise.then(value => /* keep comment */\n{\n\tbar(value);\n});"
+			, output: null
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
 		}
 	]
 });

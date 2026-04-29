@@ -26,5 +26,13 @@ ruleTester.run('sm-no-saccade-style/leading-operators', rule, {
 	&& validated;`
 			, errors: [{ messageId: 'operatorAtBeginning' }]
 		}
+		, {
+			code: `const ready = loaded
+	&& validated;`
+			, output: `const ready = loaded &&
+	validated;`
+			, options: ['after']
+			, errors: [{ messageId: 'operatorAtEnd' }]
+		}
 	]
 });
