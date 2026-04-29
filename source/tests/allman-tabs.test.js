@@ -13,6 +13,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 	valid: [
 		"if(foo)\n{\n\tbar();\n}",
 		"const short\t    = 1;\nconst longerName = 2;",
+		"promise.then(value => {\n\tbar(value);\n});",
 	],
 	invalid: [
 		{
@@ -27,6 +28,11 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 				{ messageId: 'wrongIndentation' },
 				{ messageId: 'mixedSpacesAndTabs' },
 			],
+		},
+		{
+			code: "promise.then(value =>\n{\n\tbar(value);\n});",
+			output: "promise.then(value => {\n\tbar(value);\n});",
+			errors: [{ messageId: 'unexpectedArrowAllmanOpen' }],
 		},
 	],
 });

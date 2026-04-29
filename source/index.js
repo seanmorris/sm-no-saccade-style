@@ -46,7 +46,6 @@ plugin.configs.recommended = [
 					':': 'before',
 				},
 			}],
-			'@stylistic/brace-style': ['error', 'allman', { allowSingleLine: true }],
 			'@stylistic/indent': ['error', 'tab'],
 		},
 	},

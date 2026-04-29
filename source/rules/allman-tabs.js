@@ -5,6 +5,10 @@ import { composeListeners, withOptions } from './_compose.js';
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
 
+function isArrowFunctionBlock(node) {
+	return node.type === 'BlockStatement' && node.parent?.type === 'ArrowFunctionExpression';
+}
+
 export default {
 	meta: {
 		type: 'layout',
@@ -14,6 +18,7 @@ export default {
 			...indentRule.meta.messages,
 			...noMixedSpacesAndTabsRule.meta.messages,
 			expectedAllmanOpen: 'Opening brace should be on its own line.',
+			unexpectedArrowAllmanOpen: 'Arrow function opening brace should stay on the same line as the arrow.',
 		},
 		docs: {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.',
@@ -37,8 +42,25 @@ export default {
 				return;
 			}
 
-			const between = sourceCode.text.slice(previousToken.range[1], openingBrace.range[0]);
 			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace, { includeComments: true }).some((token) => token.type === 'Block' || token.type === 'Line');
+			const arrowFunctionBlock = isArrowFunctionBlock(node);
+
+			if (arrowFunctionBlock) {
+				if (previousToken.loc.end.line === openingBrace.loc.start.line) {
+					return;
+				}
+
+				context.report({
+					node,
+					loc: openingBrace.loc,
+					messageId: 'unexpectedArrowAllmanOpen',
+					fix: hasComments
+						? null
+						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], ' '),
+				});
+
+				return;
+			}
 
 			if (previousToken.loc.end.line !== openingBrace.loc.start.line) {
 				return;
@@ -68,6 +90,10 @@ export default {
 			}
 
 			const between = sourceCode.text.slice(previousToken.range[1], openingBrace.range[0]);
+
+			if (isArrowFunctionBlock(node)) {
+				return;
+			}
 
 			if (!between.includes('\n') || !/[ \t]+\n[ \t]*$/u.test(between)) {
 				return;
