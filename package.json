@@ -2,6 +2,7 @@
   "name": "sm-no-saccade-style",
   "license": "Apache-2.0",
   "author": "Sean Morris",
+  "version": "0.0.0",
   "description": "ESLint style plugin for left-rail punctuation, Allman blocks, tabs, and tight control parens.",
   "type": "module",
   "exports": {
@@ -17,8 +18,11 @@
     "test": "node ./source/tests/run.js",
     "lint:fixtures": "eslint test-fixtures --fix"
   },
-  "devDependencies": {
+  "dependencies": {
     "@stylistic/eslint-plugin": "^2.11.0",
+    "@typescript-eslint/parser": "^8.46.2"
+  },
+  "devDependencies": {
     "eslint": "^9.26.0"
   }
 }

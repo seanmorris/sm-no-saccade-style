@@ -1,10 +1,12 @@
 import stylistic from '@stylistic/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 
 import allmanTabs from './rules/allman-tabs.js';
 import finalCommaLine from './rules/final-comma-line.js';
 import leadingCommaLists from './rules/leading-comma-lists.js';
 import leadingOperators from './rules/leading-operators.js';
 import noSpaceControlParen from './rules/no-space-control-paren.js';
+import noTrailingWhitespace from './rules/no-trailing-whitespace.js';
 
 const plugin = {
 	meta: {
@@ -16,6 +18,7 @@ const plugin = {
 		'leading-comma-lists': leadingCommaLists,
 		'leading-operators': leadingOperators,
 		'no-space-control-paren': noSpaceControlParen,
+		'no-trailing-whitespace': noTrailingWhitespace,
 	},
 	configs: {},
 };
@@ -28,10 +31,11 @@ plugin.configs.recommended = [
 		},
 		rules: {
 			'sm-no-saccade-style/leading-comma-lists': 'error',
-			'sm-no-saccade-style/final-comma-line': ['error', { mode: 'allow' }],
+			'sm-no-saccade-style/final-comma-line': ['error', { mode: 'forbid' }],
 			'sm-no-saccade-style/leading-operators': 'error',
 			'sm-no-saccade-style/allman-tabs': 'error',
 			'sm-no-saccade-style/no-space-control-paren': 'error',
+			'sm-no-saccade-style/no-trailing-whitespace': 'error',
 			'@stylistic/comma-style': ['error', 'first', {
 				exceptions: {
 					ArrayExpression: true,
@@ -48,6 +52,12 @@ plugin.configs.recommended = [
 			}],
 			'@stylistic/eol-last': ['error', 'always'],
 			'@stylistic/indent': ['error', 'tab'],
+		},
+	},
+	{
+		files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
+		languageOptions: {
+			parser: tsParser,
 		},
 	},
 ];

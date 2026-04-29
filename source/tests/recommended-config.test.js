@@ -13,15 +13,16 @@ const eslint = new ESLint({
 			, languageOptions: {
 				ecmaVersion: 'latest'
 				, sourceType: 'module'
-				,
 			}
-			,
 		}
-		,
 	]
 });
 
-const [result] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js' });
+const [jsResult] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js' });
+const [tsResult] = await eslint.lintText('const x: number = 1;', { filePath: 'fixture.ts' });
 
-assert.equal(result.messages.length, 1);
-assert.equal(result.messages[0].ruleId, '@stylistic/eol-last');
+assert.equal(jsResult.messages.length, 1);
+assert.equal(jsResult.messages[0].ruleId, '@stylistic/eol-last');
+
+assert.equal(tsResult.messages.length, 1);
+assert.equal(tsResult.messages[0].ruleId, '@stylistic/eol-last');

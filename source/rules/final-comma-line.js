@@ -51,6 +51,17 @@ function buildRemoveFinalCommaLineFix(sourceCode, fixer, commaToken)
 	return fixer.removeRange([lineStartIndex, lineEndIndex]);
 }
 
+function buildRemoveTrailingCommaFix(sourceCode, fixer, commaToken, closerToken)
+{
+	const commaIsOwnLine
+		= commaToken.loc.start.line < closerToken.loc.start.line
+		&& isFirstTokenOnLine(sourceCode, commaToken);
+
+	return commaIsOwnLine
+		? buildRemoveFinalCommaLineFix(sourceCode, fixer, commaToken)
+		: fixer.remove(commaToken);
+}
+
 export default {
 	meta: {
 		type: 'layout'
@@ -113,7 +124,9 @@ export default {
 								? 'unexpectedFinalCommaLine'
 								: 'expectedFinalCommaLine'
 						, fix: canFix
-							? (fixer) => buildFinalCommaLineFix(sourceCode, fixer, tokenBeforeCloser, closerToken, lastItemToken)
+							? options.mode === 'forbid'
+								? (fixer) => buildRemoveTrailingCommaFix(sourceCode, fixer, tokenBeforeCloser, closerToken)
+								: (fixer) => buildFinalCommaLineFix(sourceCode, fixer, tokenBeforeCloser, closerToken, lastItemToken)
 							: null
 					});
 
@@ -126,7 +139,7 @@ export default {
 						node: items[items.length - 1]
 						, loc: tokenBeforeCloser.loc
 						, messageId: 'unexpectedFinalCommaLine'
-						, fix: (fixer) => buildRemoveFinalCommaLineFix(sourceCode, fixer, tokenBeforeCloser)
+						, fix: (fixer) => buildRemoveTrailingCommaFix(sourceCode, fixer, tokenBeforeCloser, closerToken)
 					});
 				}
 

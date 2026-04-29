@@ -17,11 +17,15 @@ Put control symbols where the eye naturally reacquires the next line.
 This style favors:
 
 - leading commas
+- no trailing commas
 - leading boolean / arithmetic continuation operators
 - leading ternary markers
-- Allman braces
+- Allman braces for declarations and block forms
+- same-line braces for inline functions, inline class expressions, and inline object methods
 - tab indentation
 - tight control parentheses (`if(x)`)
+- no trailing whitespace outside strings
+- final trailing newline
 
 ## Example
 
@@ -33,9 +37,9 @@ const value = source ||
 	defaultValue;
 
 const list = [
-	'a',
+	'a'
 	'b',
-	'c',
+    'c',
 ];
 ```
 
@@ -63,6 +67,8 @@ export default [
 ];
 ```
 
+The recommended config works for both JavaScript and TypeScript.
+
 ## Rules
 
 - `sm-no-saccade-style/leading-comma-lists`
@@ -70,3 +76,5 @@ export default [
 - `sm-no-saccade-style/leading-operators`
 - `sm-no-saccade-style/allman-tabs`
 - `sm-no-saccade-style/no-space-control-paren`
+- `sm-no-saccade-style/no-trailing-whitespace`
+- `@stylistic/eol-last`
