@@ -20,6 +20,12 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	, b: 2
 };`
 		, `const x = ['a', 'b'];`
+		, `const [a, ...rest] = source;`
+		, `const {
+	a
+	// keep comment
+	, b
+} = source;`
 	]
 	, invalid: [
 		{
@@ -45,6 +51,32 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	a: 1
 	, b: 2
 };`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const {
+	a,
+	b
+} = source;`
+			, output: `const {
+	a
+	, b
+} = source;`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	'a',
+	// keep comment
+	'b'
+];`
+			, output: null
 			, errors: [
 				{ messageId: 'expectedLeadingComma' }
 				, { messageId: 'unexpectedTrailingComma' }

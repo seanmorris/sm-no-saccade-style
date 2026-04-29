@@ -46,6 +46,12 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 ];`
 			, options: [{ mode: 'forbid' }]
 		}
+		, {
+			code: `const x = [
+
+];`
+			, options: [{ mode: 'require' }]
+		}
 	]
 	, invalid: [
 		{
@@ -95,6 +101,15 @@ ruleTester.run('sm-no-saccade-style/final-comma-line', rule, {
 	'a'
 	, 'b'
 ];`
+			, options: [{ mode: 'forbid' }]
+			, errors: [{ messageId: 'unexpectedFinalCommaLine' }]
+		}
+		, {
+			code: `const x = {
+	a: 1,
+	// keep comment
+};`
+			, output: null
 			, options: [{ mode: 'forbid' }]
 			, errors: [{ messageId: 'unexpectedFinalCommaLine' }]
 		}

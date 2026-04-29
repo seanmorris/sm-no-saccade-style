@@ -22,6 +22,8 @@ This style favors:
 - leading ternary markers
 - Allman braces for declarations and block forms
 - same-line braces for inline functions, inline class expressions, and inline object methods
+- no extra blank lines between adjacent delimiter-only lines
+- at most one blank line between a closing delimiter line and the next opening delimiter line
 - tab indentation
 - tight control parentheses (`if(x)`)
 - no trailing whitespace outside strings
@@ -37,9 +39,9 @@ const value = source ||
 	defaultValue;
 
 const list = [
-	'a'
+	'a',
 	'b',
-    'c',
+	'c',
 ];
 ```
 
@@ -72,9 +74,18 @@ The recommended config works for both JavaScript and TypeScript.
 ## Rules
 
 - `sm-no-saccade-style/leading-comma-lists`
+  Moves commas to the left rail for multiline arrays and objects.
 - `sm-no-saccade-style/final-comma-line`
+  Forbids trailing commas in the recommended preset. The rule itself still supports `allow`, `require`, and `forbid`.
 - `sm-no-saccade-style/leading-operators`
+  Moves continuation operators to the beginning of the next line.
 - `sm-no-saccade-style/allman-tabs`
+  Enforces Allman braces for declarations and block forms, but keeps inline functions, inline class expressions, and inline object methods on the same line.
+- `sm-no-saccade-style/no-double-closing-gap`
+  Forbids extra blank lines between delimiter-only lines: no blank lines for `open -> open` or `close -> close`, and at most one blank line for `close -> open`.
 - `sm-no-saccade-style/no-space-control-paren`
+  Enforces tight control parens like `if(x)`.
 - `sm-no-saccade-style/no-trailing-whitespace`
+  Strips trailing spaces and tabs unless they are part of template-string content.
 - `@stylistic/eol-last`
+  Requires one final trailing newline at end of file.

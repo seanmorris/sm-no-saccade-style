@@ -20,10 +20,20 @@ function getParenToken(sourceCode, node)
 
 	if(node.type === 'DoWhileStatement')
 	{
-		return sourceCode.getFirstTokenBetween(sourceCode.getFirstToken(node, { skip: 1 }), node.test, (token) => token.value === '(');
+		return sourceCode.getFirstTokenBetween(node.body, node.test, (token) => token.value === '(');
 	}
 
 	return sourceCode.getFirstTokenBetween(sourceCode.getFirstToken(node), node.test ?? node.discriminant ?? node.right, (token) => token.value === '(');
+}
+
+function getKeywordToken(sourceCode, node)
+{
+	if(node.type === 'DoWhileStatement')
+	{
+		return sourceCode.getTokenBefore(node.test, (token) => token.value === 'while');
+	}
+
+	return sourceCode.getFirstToken(node);
 }
 
 export default {
@@ -45,7 +55,7 @@ export default {
 				return;
 			}
 
-			const keywordToken = sourceCode.getFirstToken(node);
+			const keywordToken = getKeywordToken(sourceCode, node);
 			const parenToken = getParenToken(sourceCode, node);
 
 			if(!keywordToken || !parenToken)
