@@ -35,6 +35,11 @@ function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 	];
 }
 
+function buildLeadingCommaSpacingFix(fixer, commaToken, itemToken)
+{
+	return fixer.replaceTextRange([commaToken.range[1], itemToken.range[0]], ' ');
+}
+
 function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 {
 	const firstItemToken = sourceCode.getFirstToken(lineItems[0]);
@@ -73,6 +78,7 @@ export default {
 		, messages: {
 			expectedLeadingComma: 'Comma should be at the beginning of the line for multiline list items.'
 			, unexpectedTrailingComma: 'Trailing comma should not stay on the previous item line in a multiline list.'
+			, expectedSpaceAfterLeadingComma: 'Leading comma must be followed by a space.'
 			, groupedRowTooWide: `Grouped multiline list rows should stay within column ${MAX_GROUPED_ROW_COLUMN}.`
 		}
 	}
@@ -96,11 +102,6 @@ export default {
 
 		function checkGroupedRows(node, items)
 		{
-			if(!SUPPORTED_TYPES.has(node.type))
-			{
-				return;
-			}
-
 			const lines = new Map();
 
 			for(const item of items)
@@ -168,10 +169,10 @@ export default {
 					continue;
 				}
 
-				if(isGroupedRowPair(node, commaToken, itemToken) || isAllowedSpacedFinalItem(items, i))
-				{
+				if((isGroupedRowPair(node, commaToken, itemToken) && !isFirstTokenOnLine(sourceCode, commaToken))
+					|| isAllowedSpacedFinalItem(items, i)) {
 					continue;
-				}
+					}
 
 				const commaOnItemLine = commaToken.loc.start.line === itemToken.loc.start.line;
 				const commaLeading = isFirstTokenOnLine(sourceCode, commaToken);
@@ -189,6 +190,22 @@ export default {
 						, fix: canFix
 							? (fixer) => buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 							: null
+					});
+
+					continue;
+				}
+
+				const spacingText = sourceCode.text.slice(commaToken.range[1], itemToken.range[0]);
+
+				if(spacingText !== ' ')
+				{
+					context.report({
+						node: items[i]
+						, loc: commaToken.loc
+						, messageId: 'expectedSpaceAfterLeadingComma'
+						, fix: hasCommentsBetween(sourceCode, commaToken, itemToken)
+							? null
+							: (fixer) => buildLeadingCommaSpacingFix(fixer, commaToken, itemToken)
 					});
 				}
 			}

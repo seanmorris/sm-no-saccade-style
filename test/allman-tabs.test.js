@@ -30,6 +30,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(graphs)\n\tfor(const graph of graphs)\n\t{\n\t\tgraph.delete(entity);\n\t}"
 		, "new Set(this.mapRenderers.keys())\n.difference(visibleMaps)\n.forEach(map => {\n\tthis.mapRenderers.delete(map);\n\tmap.visible = false;\n});"
 		, "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
+		, "const x = fn({\n\ta: 1});"
 	]
 	, invalid: [
 		{
@@ -86,8 +87,18 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 			, errors: [{ messageId: 'unexpectedMultilineFunctionOpen' }]
 		}
 		, {
+			code: "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}) /* keep comment */\n\t{\n\t\tbar();\n\t}\n}"
+			, output: null
+			, errors: [{ messageId: 'unexpectedMultilineFunctionOpen' }]
+		}
+		, {
 			code: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n)\n{\n\tworld.motionGraph.delete(this);\n}"
 			, output: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n){\n\tworld.motionGraph.delete(this);\n}"
+			, errors: [{ messageId: 'unexpectedMultilineControlOpen' }]
+		}
+		, {
+			code: "if(motionParent\n\t&& !world.motionGraph.getParent(motionParent)\n\t&& !maps.has(motionParent)\n) /* keep comment */\n{\n\tworld.motionGraph.delete(this);\n}"
+			, output: null
 			, errors: [{ messageId: 'unexpectedMultilineControlOpen' }]
 		}
 		, {
@@ -107,6 +118,11 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		}
 		, {
 			code: "promise.then(value => /* keep comment */\n{\n\tbar(value);\n});"
+			, output: null
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
+		}
+		, {
+			code: "promise.then(value => // keep comment\n{\n\tbar(value);\n});"
 			, output: null
 			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
 		}

@@ -56,9 +56,7 @@ function getOpeningBraceToken(sourceCode, node)
 	{
 		const rightParen = sourceCode.getTokenAfter(node.discriminant, (token) => token.value === ')');
 
-		return rightParen
-			? sourceCode.getTokenAfter(rightParen, (token) => token.value === '{')
-			: null;
+		return sourceCode.getTokenAfter(rightParen, (token) => token.value === '{');
 	}
 
 	return sourceCode.getFirstToken(node);
@@ -79,7 +77,7 @@ function isEmptyBody(node)
 	return node.type === 'BlockStatement' && node.body.length === 0;
 }
 
-function hasMultilineControlHead(node)
+export function hasMultilineControlHead(node)
 {
 	if(node.type === 'SwitchStatement')
 	{
@@ -91,7 +89,28 @@ function hasMultilineControlHead(node)
 		return false;
 	}
 
-	const headEndNode = node.parent.test ?? node.parent.right ?? node.parent.discriminant ?? node.parent.object;
+	let headEndNode = null;
+
+	switch(node.parent.type)
+	{
+		case 'IfStatement':
+		case 'WhileStatement':
+			headEndNode = node.parent.test;
+			break;
+
+		case 'ForInStatement':
+		case 'ForOfStatement':
+			headEndNode = node.parent.right;
+			break;
+
+		case 'ForStatement':
+			headEndNode = node.parent.update ?? node.parent.test ?? node.parent.init;
+			break;
+
+		case 'WithStatement':
+			headEndNode = node.parent.object;
+			break;
+	}
 
 	return node.type === 'BlockStatement'
 		&& !!headEndNode
@@ -122,12 +141,12 @@ function hasMultilineFunctionHead(node, previousToken)
 
 function getTokenLineIndent(sourceCode, token)
 {
-	const line = sourceCode.lines[token.loc.start.line - 1] ?? '';
+	const line = sourceCode.lines[token.loc.start.line - 1];
 
-	return line.match(/^[\t ]*/u)?.[0] ?? '';
+	return line.match(/^[\t ]*/u)[0];
 }
 
-function buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
+export function buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
 {
 	const previousLineIndent = getTokenLineIndent(sourceCode, previousToken);
 
@@ -201,19 +220,16 @@ function isLeadingChainDot(sourceCode, descriptor)
 	return lineIndent.length === token.loc.start.column;
 }
 
-function collectChainedCallbackBodyRanges(root)
+export function collectChainedCallbackBodyRanges(root)
 {
 	const ranges = [];
-	const seen = new Set();
 
 	function visit(node, parent, grandparent)
 	{
-		if(!node || typeof node !== 'object' || seen.has(node))
+		if(!node || typeof node !== 'object')
 		{
 			return;
 		}
-
-		seen.add(node);
 
 		if(
 			node.type === 'BlockStatement'
@@ -253,17 +269,6 @@ function collectChainedCallbackBodyRanges(root)
 	visit(root, null, null);
 
 	return ranges;
-}
-
-function isMatchingDelimiter(openingToken, closingToken)
-{
-	const pairs = new Map([
-		[')', '(']
-		, [']', '[']
-		, ['}', '{']
-	]);
-
-	return pairs.get(closingToken.value) === openingToken?.value;
 }
 
 export default {
@@ -446,7 +451,7 @@ export default {
 
 		function checkClosingDelimiterIndent()
 		{
-			const tokens = sourceCode.ast.tokens ?? sourceCode.getTokens(sourceCode.ast, { includeComments: false });
+			const tokens = sourceCode.ast.tokens;
 			const stack = [];
 
 			for(let i = 0; i < tokens.length; i += 1)
@@ -466,11 +471,6 @@ export default {
 
 				const openingToken = stack.pop();
 
-				if(!isMatchingDelimiter(openingToken, token))
-				{
-					continue;
-				}
-
 				const lineIndent = getTokenLineIndent(sourceCode, token);
 
 				if(lineIndent.length !== token.loc.start.column)
@@ -479,11 +479,6 @@ export default {
 				}
 
 				const previousToken = tokens[i - 1];
-
-				if(previousToken && previousToken.loc.start.line === token.loc.start.line)
-				{
-					continue;
-				}
 
 				const closingTokens = [token];
 				const openingTokens = [openingToken];
@@ -500,11 +495,6 @@ export default {
 
 					const nextOpeningToken = tempStack.pop();
 
-					if(!isMatchingDelimiter(nextOpeningToken, nextToken))
-					{
-						break;
-					}
-
 					closingTokens.push(nextToken);
 					openingTokens.push(nextOpeningToken);
 				}
@@ -517,9 +507,7 @@ export default {
 					context.report({
 						loc: token.loc
 						, messageId: 'mixedClosingRays'
-						, fix: previousToken
-							? (fixer) => buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
-							: null
+						, fix: (fixer) => buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
 					});
 
 					continue;

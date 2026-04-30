@@ -29,7 +29,7 @@ export function getLineIndent(sourceCode, token)
 
 export function getTokenLineIndent(sourceCode, token)
 {
-	return getLineIndent(sourceCode, token).match(/^[\t ]*/u)?.[0] ?? '';
+	return getLineIndent(sourceCode, token).match(/^[\t ]*/u)[0];
 }
 
 export function isFirstTokenOnLine(sourceCode, token)

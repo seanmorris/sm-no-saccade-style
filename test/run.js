@@ -1,4 +1,5 @@
 import './allman-tabs.test.js';
+import './allman-tabs.helpers.test.js';
 import './final-comma-line.test.js';
 import './leading-comma-lists.test.js';
 import './leading-operators.test.js';

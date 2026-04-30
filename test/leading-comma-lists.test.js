@@ -19,6 +19,11 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	a: 1
 	, b: 2
 };`
+		, `const x = [
+	a
+	, b
+	, c
+];`
 		, `const x = ['a', 'b'];`
 		, `const [a, ...rest] = source;`
 		, `const {
@@ -71,8 +76,8 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	, ...rest
 ] = source;`
 		, `const x = {
-	...rest
-};`
+		...rest
+	};`
 	]
 	, invalid: [
 		{
@@ -149,6 +154,32 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 		}
 		, {
 			code: `const x = [
+	a
+	,b
+	,  c
+];`
+			, output: `const x = [
+	a
+	, b
+	, c
+];`
+			, errors: [
+				{ messageId: 'expectedSpaceAfterLeadingComma' }
+				, { messageId: 'expectedSpaceAfterLeadingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	a
+	, /* keep comment */ b
+];`
+			, output: null
+			, errors: [
+				{ messageId: 'expectedSpaceAfterLeadingComma' }
+			]
+		}
+		, {
+			code: `const x = [
 	reallyLongIdentifierAlpha, reallyLongIdentifierBeta, reallyLongIdentifierGammaPlus
 	, reallyLongIdentifierDelta, reallyLongIdentifierEpsilon, reallyLongIdentifierZeta
 ];`
@@ -163,6 +194,15 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, errors: [
 				{ messageId: 'groupedRowTooWide' }
 				, { messageId: 'groupedRowTooWide' }
+			]
+		}
+		, {
+			code: `const x = [
+	reallyLongIdentifierAlpha /* keep comment */, reallyLongIdentifierBeta, reallyLongIdentifierGammaPlus
+];`
+			, output: null
+			, errors: [
+				{ messageId: 'groupedRowTooWide' }
 			]
 		}
 		, {
