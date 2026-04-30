@@ -1,5 +1,6 @@
 import {
 	getListItems,
+	getLineIndent,
 	hasCommentsBetween,
 	isFirstTokenOnLine,
 } from './_list-utils.js';
@@ -13,6 +14,12 @@ const SUPPORTED_TYPES = new Set([
 ]);
 
 const MAX_GROUPED_ROW_COLUMN = 80;
+const SPACED_FINAL_TYPES = new Set([
+	'ArrayExpression'
+	, 'ArrowFunctionExpression'
+	, 'FunctionExpression'
+	, 'ObjectExpression'
+]);
 
 function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 {
@@ -26,6 +33,36 @@ function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 		fixer.remove(commaToken)
 		, fixer.insertTextBefore(itemToken, ', ')
 	];
+}
+
+function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
+{
+	const firstItemToken = sourceCode.getFirstToken(lineItems[0]);
+	const previousToken = sourceCode.getTokenBefore(firstItemToken);
+	const hasLeadingComma = previousToken?.value === ',' && previousToken.loc.start.line === firstItemToken.loc.start.line;
+	const rowStartToken = hasLeadingComma ? previousToken : firstItemToken;
+	const rowEndToken = sourceCode.getLastToken(lineItems.at(-1));
+
+	if(hasCommentsBetween(sourceCode, rowStartToken, rowEndToken))
+	{
+		return null;
+	}
+
+	const indent = getLineIndent(sourceCode, rowStartToken);
+	const replacement = lineItems
+		.map((item, index) => {
+			const text = sourceCode.getText(item);
+
+			if(index === 0 && !hasLeadingComma)
+			{
+				return text;
+			}
+
+			return `, ${text}`;
+		})
+		.join(`\n${indent}`);
+
+	return fixer.replaceTextRange([rowStartToken.range[0], rowEndToken.range[1]], replacement);
 }
 
 export default {
@@ -42,17 +79,24 @@ export default {
 	, create(context) {
 		const sourceCode = context.sourceCode;
 
-		function isGroupedArrayPair(node, leftToken, rightToken)
+		function isGroupedRowPair(node, leftToken, rightToken)
 		{
-			return (
-				(node.type === 'ArrayExpression' || node.type === 'ArrayPattern')
-				&& leftToken.loc.end.line === rightToken.loc.start.line
-			);
+			return SUPPORTED_TYPES.has(node.type) && leftToken.loc.end.line === rightToken.loc.start.line;
 		}
 
-		function checkGroupedArrayRows(node, items)
+		function isAllowedSpacedFinalItem(items, index)
 		{
-			if(node.type !== 'ArrayExpression' && node.type !== 'ArrayPattern')
+			if(index !== items.length - 1)
+			{
+				return false;
+			}
+
+			return SPACED_FINAL_TYPES.has(items[index].type);
+		}
+
+		function checkGroupedRows(node, items)
+		{
+			if(!SUPPORTED_TYPES.has(node.type))
 			{
 				return;
 			}
@@ -69,12 +113,12 @@ export default {
 					lines.set(line, []);
 				}
 
-				lines.get(line).push(token);
+				lines.get(line).push(item);
 			}
 
-			for(const [lineNumber, lineTokens] of lines)
+			for(const [lineNumber, lineItems] of lines)
 			{
-				if(lineTokens.length < 2)
+				if(lineItems.length < 2)
 				{
 					continue;
 				}
@@ -92,6 +136,7 @@ export default {
 						, end: { line: lineNumber, column: line.length }
 					}
 					, messageId: 'groupedRowTooWide'
+					, fix: (fixer) => buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 				});
 			}
 		}
@@ -110,7 +155,7 @@ export default {
 				return;
 			}
 
-			checkGroupedArrayRows(node, items);
+			checkGroupedRows(node, items);
 
 			for(let i = 1; i < items.length; i += 1)
 			{
@@ -123,7 +168,7 @@ export default {
 					continue;
 				}
 
-				if(isGroupedArrayPair(node, commaToken, itemToken))
+				if(isGroupedRowPair(node, commaToken, itemToken) || isAllowedSpacedFinalItem(items, i))
 				{
 					continue;
 				}
@@ -160,7 +205,7 @@ export default {
 					continue;
 				}
 
-				if(isGroupedArrayPair(node, itemToken, nextItemToken))
+				if(isGroupedRowPair(node, itemToken, nextItemToken) || isAllowedSpacedFinalItem(items, i + 1))
 				{
 					continue;
 				}

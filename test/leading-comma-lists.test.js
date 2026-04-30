@@ -45,6 +45,27 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	, 1.0, 0.0
 	, 1.0, 1.0
 ];`
+		, `const x = [
+	a
+	, b, {
+		c: 1
+	}
+];`
+		, `const x = [
+	a
+	, b, [
+		c
+	]
+];`
+		, `const x = [
+	a
+	, b, () => {
+		return c;
+	}
+];`
+		, `const x = {
+	duration: 0, weakMagnitude: 0, strongMagnitude: 0
+};`
 		, `const [
 	a
 	, ...rest
@@ -131,10 +152,30 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	reallyLongIdentifierAlpha, reallyLongIdentifierBeta, reallyLongIdentifierGammaPlus
 	, reallyLongIdentifierDelta, reallyLongIdentifierEpsilon, reallyLongIdentifierZeta
 ];`
-			, output: null
+			, output: `const x = [
+	reallyLongIdentifierAlpha
+	, reallyLongIdentifierBeta
+	, reallyLongIdentifierGammaPlus
+	, reallyLongIdentifierDelta
+	, reallyLongIdentifierEpsilon
+	, reallyLongIdentifierZeta
+];`
 			, errors: [
 				{ messageId: 'groupedRowTooWide' }
 				, { messageId: 'groupedRowTooWide' }
+			]
+		}
+		, {
+			code: `const x = {
+	reallyLongIdentifierAlpha: 1, reallyLongIdentifierBeta: 2, reallyLongIdentifierGammaPlus: 3
+};`
+			, output: `const x = {
+	reallyLongIdentifierAlpha: 1
+	, reallyLongIdentifierBeta: 2
+	, reallyLongIdentifierGammaPlus: 3
+};`
+			, errors: [
+				{ messageId: 'groupedRowTooWide' }
 			]
 		}
 	]
