@@ -130,6 +130,239 @@ export default [
 
 The recommended config works for both JavaScript and TypeScript.
 
+## Style Guide
+
+This section describes how to lay out code so it already matches the formatter and lint rules this package enforces.
+
+### Lists and records
+
+Keep commas on the next line for multiline arrays, objects, object patterns, and array patterns.
+
+```js
+const point = {
+	x: 10
+	, y: 20
+	, label: 'spawn'
+};
+
+const bounds = [
+	left
+	, top
+	, right
+	, bottom
+];
+
+const {
+	id
+	, name
+	, enabled
+} = config;
+```
+
+Put exactly one space after a leading comma.
+
+```js
+const list = [
+	a
+	, b
+	, c
+];
+```
+
+Short grouped rows are allowed when they stay compact.
+
+```js
+const uv = [
+	0.0, 0.0
+	, 1.0, 0.0
+	, 0.0, 1.0
+];
+```
+
+When a grouped row gets too wide, split it so each item gets its own line.
+
+```js
+const values = [
+	reallyLongIdentifierAlpha
+	, reallyLongIdentifierBeta
+	, reallyLongIdentifierGamma
+];
+```
+
+Do not use trailing commas in the recommended preset.
+
+```js
+const user = {
+	id: 1
+	, name: 'Ada'
+};
+```
+
+### Continuation operators
+
+Put multiline continuation operators at the beginning of the continued line.
+
+```js
+const ready = cache.loaded
+	&& !queue.length
+	&& currentUser
+	&& currentUser.enabled;
+
+const total = subtotal
+	+ shipping
+	- discount;
+```
+
+Ternary markers also lead the continued line.
+
+```js
+const label = isReady
+	? 'ready'
+	: 'pending';
+```
+
+### Braces and heads
+
+Use Allman braces for declarations and normal block forms.
+
+```js
+function refresh()
+{
+	render();
+}
+
+if(visible)
+{
+	render();
+}
+
+switch(mode)
+{
+	case 'edit':
+		return edit();
+}
+```
+
+Keep the opening brace on the same line when the body is inline by design:
+
+- arrow functions with block bodies
+- function expressions
+- inline class expressions
+- inline object methods
+
+```js
+promise.then(result => {
+	handle(result);
+});
+
+const loader = function() {
+	return cache.read();
+};
+
+const Widget = class {
+	render()
+	{
+		return output;
+	}
+};
+
+const api = {
+	load() {
+		return fetchData();
+	}
+};
+```
+
+Multiline control heads keep `{` on the same line as the closing `)`.
+
+```js
+if(primaryTarget
+	&& !visited.has(primaryTarget)
+	&& !queue.length
+){
+	visit(primaryTarget);
+}
+
+with(context
+){
+	run();
+}
+```
+
+Multiline function heads also keep `{` on the same line as the closing `)`.
+
+```js
+class Scene
+{
+	constructor({
+		width
+		, height
+	}){
+		this.width = width;
+		this.height = height;
+	}
+}
+```
+
+Empty inline bodies are allowed for compact declarations.
+
+```js
+class NullLogger
+{
+	info(){}
+}
+
+if(disabled){}
+```
+
+### Delimiter rails
+
+Do not add extra blank lines between adjacent delimiter-only lines.
+
+```js
+const config = {
+	range: [
+		start
+		, end
+	]
+};
+```
+
+Do not stack closing delimiters from different indentation rails on the same line when they belong to different openings.
+
+```js
+const loadSlices = layers.map(
+	layer => layer.tiles.map(tile => ({
+		id: tile.id
+	}))
+);
+```
+
+### Indentation and whitespace
+
+Indent with tabs. Use alignment only where smart tabs make the structure clearer.
+
+```js
+const shortName = 1;
+const longerKey = 2;
+```
+
+Use tight control parens.
+
+```js
+if(ready)
+{
+	run();
+}
+
+while(queue.length)
+{
+	drain(queue);
+}
+```
+
+Avoid trailing spaces and keep one final newline at the end of each file.
+
 ## Rules
 
 - `sm-no-saccade-style/leading-comma-lists`
