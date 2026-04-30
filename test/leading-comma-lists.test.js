@@ -218,5 +218,104 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 				{ messageId: 'groupedRowTooWide' }
 			]
 		}
+		, {
+			code: `const x = [
+	{ alpha: 1, beta: 2, gamma: 3 }, { alpha: 4, beta: 5, gamma: 6 }, { alpha: 7, beta: 8, gamma: 9 }
+];`
+			, output: `const x = [
+	{ alpha: 1, beta: 2, gamma: 3 }
+	, { alpha: 4, beta: 5, gamma: 6 }
+	, { alpha: 7, beta: 8, gamma: 9 }
+];`
+			, errors: [
+				{ messageId: 'groupedRowTooWide' }
+			]
+		}
+		, {
+			code: `const x = [
+	{ alpha: 1, beta: 2, gamma: 3 },
+	{ alpha: 4, beta: 5, gamma: 6 },
+	{ alpha: 7, beta: 8, gamma: 9 },
+	{ alpha: 10, beta: 11, gamma: 12 },
+	{ alpha: 13, beta: 14, gamma: 15 },
+	{ alpha: 16, beta: 17, gamma: 18 },
+	{ alpha: 19, beta: 20, gamma: 21 },
+	{ alpha: 22, beta: 23, gamma: 24 },
+	{ alpha: 25, beta: 26, gamma: 27 },
+	{ alpha: 28, beta: 29, gamma: 30 }
+];`
+			, output: `const x = [
+	{ alpha: 1, beta: 2, gamma: 3 }
+	, { alpha: 4, beta: 5, gamma: 6 }
+	, { alpha: 7, beta: 8, gamma: 9 }
+	, { alpha: 10, beta: 11, gamma: 12 }
+	, { alpha: 13, beta: 14, gamma: 15 }
+	, { alpha: 16, beta: 17, gamma: 18 }
+	, { alpha: 19, beta: 20, gamma: 21 }
+	, { alpha: 22, beta: 23, gamma: 24 }
+	, { alpha: 25, beta: 26, gamma: 27 }
+	, { alpha: 28, beta: 29, gamma: 30 }
+];`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = [
+	{
+		alpha: 1
+		, beta: 2
+		, gamma: 3
+	}, {
+		alpha: 4
+		, beta: 5
+		, gamma: 6
+	}, {
+		alpha: 7
+		, beta: 8
+		, gamma: 9
+	}
+];`
+			, output: `const x = [
+	{
+		alpha: 1
+		, beta: 2
+		, gamma: 3
+	}
+	, {
+		alpha: 4
+		, beta: 5
+		, gamma: 6
+	}
+	, {
+		alpha: 7
+		, beta: 8
+		, gamma: 9
+	}
+];`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+				, { messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
 	]
 });

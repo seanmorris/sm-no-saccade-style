@@ -1,6 +1,7 @@
 import {
 	getListItems,
 	getLineIndent,
+	getTokenLineIndent,
 	hasCommentsBetween,
 	isFirstTokenOnLine,
 } from './_list-utils.js';
@@ -23,10 +24,12 @@ const SPACED_FINAL_TYPES = new Set([
 
 function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 {
-	/* c8 ignore next 4 */
-	if(!isFirstTokenOnLine(sourceCode, itemToken))
+	if(commaToken.loc.start.line === itemToken.loc.start.line)
 	{
-		return null;
+		return fixer.replaceTextRange(
+			[commaToken.range[0], itemToken.range[0]]
+			, `\n${getTokenLineIndent(sourceCode, itemToken)}, `
+		);
 	}
 
 	return [
@@ -90,6 +93,18 @@ export default {
 			return SUPPORTED_TYPES.has(node.type) && leftToken.loc.end.line === rightToken.loc.start.line;
 		}
 
+		function isSingleLineNode(node)
+		{
+			return node.loc.start.line === node.loc.end.line;
+		}
+
+		function isAllowedCompactPair(node, leftItem, rightItem, leftToken, rightToken)
+		{
+			return isGroupedRowPair(node, leftToken, rightToken)
+				&& isSingleLineNode(leftItem)
+				&& isSingleLineNode(rightItem);
+		}
+
 		function isAllowedSpacedFinalItem(items, index)
 		{
 			if(index !== items.length - 1)
@@ -97,7 +112,12 @@ export default {
 				return false;
 			}
 
-			return SPACED_FINAL_TYPES.has(items[index].type);
+			const previousItem = items[index - 1];
+
+			return SPACED_FINAL_TYPES.has(items[index].type)
+				&& index > 0
+				&& isSingleLineNode(previousItem)
+				&& previousItem.loc.end.line === items[index].loc.start.line;
 		}
 
 		function checkGroupedRows(node, items)
@@ -169,7 +189,7 @@ export default {
 					continue;
 				}
 
-				if((isGroupedRowPair(node, commaToken, itemToken) && !isFirstTokenOnLine(sourceCode, commaToken))
+				if((isAllowedCompactPair(node, items[i - 1], items[i], commaToken, itemToken) && !isFirstTokenOnLine(sourceCode, commaToken))
 					|| isAllowedSpacedFinalItem(items, i)) {
 					continue;
 					}
@@ -180,8 +200,7 @@ export default {
 				if(!commaOnItemLine || !commaLeading)
 				{
 					const canFix
-						= commaToken.loc.start.line !== itemToken.loc.start.line
-						&& !hasCommentsBetween(sourceCode, commaToken, itemToken);
+						= !hasCommentsBetween(sourceCode, commaToken, itemToken);
 
 					context.report({
 						node: items[i]
@@ -222,7 +241,7 @@ export default {
 					continue;
 				}
 
-				if(isGroupedRowPair(node, itemToken, nextItemToken) || isAllowedSpacedFinalItem(items, i + 1))
+				if(isAllowedCompactPair(node, items[i], items[i + 1], itemToken, nextItemToken) || isAllowedSpacedFinalItem(items, i + 1))
 				{
 					continue;
 				}
