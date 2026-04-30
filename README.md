@@ -282,11 +282,6 @@ if(primaryTarget
 ){
 	visit(primaryTarget);
 }
-
-with(context
-){
-	run();
-}
 ```
 
 Multiline function heads also keep `{` on the same line as the closing `)`.
