@@ -1,0 +1,61 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-release-tag:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Validate release tag
+        run: |
+          version="$(node -p "require('./packages/js/package.json').version")"
+          sh scripts/validate-release-tag.sh "${GITHUB_REF_NAME}" "${version}"
+
+  verify:
+    name: Build and test
+    needs: validate-release-tag
+    uses: ./.github/workflows/verify.yml
+    with:
+      upload-npm-package: true
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Download npm package
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: dist/npm-package
+
+      - name: Publish to npm
+        run: npm publish dist/npm-package/*.tgz

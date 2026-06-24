@@ -37,6 +37,8 @@ const fixingEslint = new ESLint({
 const [jsResult] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js' });
 const [tsResult] = await eslint.lintText('const x: number = 1;', { filePath: 'fixture.ts' });
 const [semiResult] = await eslint.lintText('const x = 1\n', { filePath: 'fixture-semi.js' });
+const [ownLineSemiResult] = await eslint.lintText('foo()\n;\n', { filePath: 'fixture-own-line-semi.js' });
+const [fixedOwnLineSemiResult] = await fixingEslint.lintText('foo()\n;\nbar();\n', { filePath: 'fixture-own-line-semi.js' });
 const [bareNewResult] = await eslint.lintText('new Set;\n', { filePath: 'fixture-bare-new.js' });
 const [controlChainResult] = await eslint.lintText(`if(graphs)\nfor(const graph of graphs)\n{\n\tgraph.delete(entity);\n}\n`, { filePath: 'fixture-control-chain.js' });
 const [singleLineControlResult] = await eslint.lintText(`if(foo)\n\tbar();\n`, { filePath: 'fixture-single-control.js' });
@@ -60,6 +62,10 @@ assert.equal(tsResult.messages[0].ruleId, '@stylistic/eol-last');
 
 assert.equal(semiResult.messages.length, 1);
 assert.equal(semiResult.messages[0].ruleId, '@stylistic/semi');
+
+assert.equal(ownLineSemiResult.messages.length, 1);
+assert.equal(ownLineSemiResult.messages[0].ruleId, '@stylistic/semi-style');
+assert.equal(fixedOwnLineSemiResult.output, 'foo();\nbar();\n');
 
 assert.equal(bareNewResult.messages.length, 0);
 

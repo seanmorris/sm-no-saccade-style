@@ -19,6 +19,15 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	a: 1
 	, b: 2
 };`
+		, `const x = {
+	short: 1
+	, longerName: 2
+};`
+		, `const x = {
+	short:        1
+	, longerName: 2
+	, mid:        3
+};`
 		, `const x = [
 	a
 	, b
@@ -106,6 +115,58 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, errors: [
 				{ messageId: 'expectedLeadingComma' }
 				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const x = {
+	a : 1
+	, b : 2
+};`
+			, output: `const x = {
+	a: 1
+	, b: 2
+};`
+			, errors: [
+				{ messageId: 'unexpectedSpaceBeforeObjectColon' }
+				, { messageId: 'unexpectedSpaceBeforeObjectColon' }
+			]
+		}
+		, {
+			code: `const x = {
+	a:1
+	, b:2
+};`
+			, output: `const x = {
+	a: 1
+	, b: 2
+};`
+			, errors: [
+				{ messageId: 'expectedSpaceAfterObjectColon' }
+				, { messageId: 'expectedSpaceAfterObjectColon' }
+			]
+		}
+		, {
+			code: `const x = {
+	short:  1
+	, longerName: 2
+	, mid: 2
+};`
+			, output: `const x = {
+	short:        1
+	, longerName: 2
+	, mid:        2
+};`
+			, errors: [
+				{ messageId: 'expectedAlignedObjectColonValue' }
+				, { messageId: 'expectedAlignedObjectColonValue' }
+			]
+		}
+		, {
+			code: `const x = { a :1 };`
+			, output: `const x = { a: 1 };`
+			, errors: [
+				{ messageId: 'unexpectedSpaceBeforeObjectColon' }
+				, { messageId: 'expectedSpaceAfterObjectColon' }
 			]
 		}
 		, {

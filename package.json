@@ -1,52 +1,20 @@
 {
-  "name": "sm-no-saccade-style",
-  "license": "Apache-2.0",
-  "author": "Sean Morris",
-  "version": "0.1.1",
-  "description": "ESLint style plugin for left-rail punctuation, Allman blocks, tabs, and tight control parens.",
-  "keywords": [
-    "eslint",
-    "eslintplugin",
-    "style",
-    "formatting",
-    "commas",
-    "allman",
-    "typescript",
-    "seanmorris"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/seanmorris/sm-no-saccade-style.git"
-  },
-  "bugs": {
-    "url": "https://github.com/seanmorris/sm-no-saccade-style/issues"
-  },
-  "homepage": "https://github.com/seanmorris/sm-no-saccade-style#readme",
-  "type": "module",
-  "exports": {
-    ".": "./index.js"
-  },
-  "files": [
-    "index.js",
-    "NOTICE",
-    "README.md",
-    "source/index.js",
-    "source/rules"
+  "name": "sm-no-saccade-style-monorepo",
+  "private": true,
+  "description": "Monorepo for the sm-no-saccade-style JavaScript and PHP linters.",
+  "workspaces": [
+    "packages/js"
   ],
   "scripts": {
-    "lint": "eslint index.js source/**/*.js test/**/*.js eslint.config.js",
-    "lint:fix": "eslint index.js source/**/*.js test/**/*.js eslint.config.js --fix",
-    "prepublishOnly": "npm run lint && npm test",
-    "test": "node ./test/run.js",
-    "coverage": "c8 --reporter=text-summary --reporter=text --reporter=lcov node ./test/run.js",
-    "lint:fixtures": "eslint test-fixtures --fix"
-  },
-  "dependencies": {
-    "@stylistic/eslint-plugin": "^2.11.0",
-    "@typescript-eslint/parser": "^8.46.2"
-  },
-  "devDependencies": {
-    "c8": "^10.1.3",
-    "eslint": "^9.26.0"
+    "lint": "npm run lint:js && npm run lint:php",
+    "lint:js": "npm --workspace sm-no-saccade-style run lint",
+    "lint:php": "composer --working-dir=packages/php lint",
+    "test": "npm run test:js && npm run test:php",
+    "test:js": "npm --workspace sm-no-saccade-style test",
+    "test:php": "composer --working-dir=packages/php test",
+    "coverage": "npm run coverage:js && npm run coverage:php",
+    "coverage:js": "npm --workspace sm-no-saccade-style run coverage",
+    "coverage:php": "composer --working-dir=packages/php coverage",
+    "release:php:split": "sh scripts/split-php-package.sh"
   }
 }

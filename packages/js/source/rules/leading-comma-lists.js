@@ -14,6 +14,10 @@ const SUPPORTED_TYPES = new Set([
 
 ]);
 
+const OBJECT_TYPES = new Set([
+	'ObjectExpression'
+	, 'ObjectPattern'
+]);
 const MAX_GROUPED_ROW_COLUMN = 80;
 const SPACED_FINAL_TYPES = new Set([
 	'ArrayExpression'
@@ -41,6 +45,16 @@ function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 function buildLeadingCommaSpacingFix(fixer, commaToken, itemToken)
 {
 	return fixer.replaceTextRange([commaToken.range[1], itemToken.range[0]], ' ');
+}
+
+function buildObjectColonBeforeFix(fixer, leftToken, colonToken)
+{
+	return fixer.replaceTextRange([leftToken.range[1], colonToken.range[0]], '');
+}
+
+function buildObjectColonAfterFix(fixer, colonToken, valueToken, spacing)
+{
+	return fixer.replaceTextRange([colonToken.range[1], valueToken.range[0]], spacing);
 }
 
 function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
@@ -83,10 +97,139 @@ export default {
 			, unexpectedTrailingComma: 'Trailing comma should not stay on the previous item line in a multiline list.'
 			, expectedSpaceAfterLeadingComma: 'Leading comma must be followed by a space.'
 			, groupedRowTooWide: `Grouped multiline list rows should stay within column ${MAX_GROUPED_ROW_COLUMN}.`
+			, unexpectedSpaceBeforeObjectColon: 'Object colons should not have preceding spaces.'
+			, expectedSpaceAfterObjectColon: 'Object colons should be followed by at least one space.'
+			, expectedAlignedObjectColonValue: 'Object values should align when any property in the object pads after the colon.'
 		}
 	}
 	, create(context) {
 		const sourceCode = context.sourceCode;
+
+		function getPropertyColonToken(property)
+		{
+			if(property.shorthand || property.method)
+			{
+				return null;
+			}
+
+			return sourceCode
+				.getTokensBetween(property.key, property.value)
+				.find((token) => token.value === ':')
+				?? null;
+		}
+
+		function getObjectItemAnchorToken(property)
+		{
+			const itemToken = sourceCode.getFirstToken(property);
+			const previousToken = sourceCode.getTokenBefore(itemToken);
+
+			if(previousToken?.value === ','
+				&& previousToken.loc.start.line === itemToken.loc.start.line
+				&& isFirstTokenOnLine(sourceCode, previousToken)
+			){
+				return previousToken;
+			}
+
+			return itemToken;
+		}
+
+		function collectObjectColonEntries(node)
+		{
+			const entries = [];
+
+			for(const property of getListItems(node))
+			{
+				const colonToken = getPropertyColonToken(property);
+
+				if(!colonToken)
+				{
+					continue;
+				}
+
+				const leftToken = sourceCode.getTokenBefore(colonToken);
+				const valueToken = sourceCode.getTokenAfter(colonToken);
+
+				/* c8 ignore next 4 */
+				if(!leftToken || !valueToken)
+				{
+					continue;
+				}
+
+				entries.push({
+					property
+					, colonToken
+					, leftToken
+					, valueToken
+					, anchorToken: getObjectItemAnchorToken(property)
+					, beforeText: sourceCode.text.slice(leftToken.range[1], colonToken.range[0])
+					, afterText: sourceCode.text.slice(colonToken.range[1], valueToken.range[0])
+				});
+			}
+
+			return entries;
+		}
+
+		function checkObjectColonSpacing(node)
+		{
+			const entries = collectObjectColonEntries(node);
+			const alignmentEntries = entries.filter((entry) =>
+				entry.colonToken.loc.end.line === entry.valueToken.loc.start.line
+				&& /^[\t ]*$/u.test(entry.afterText)
+				&& !hasCommentsBetween(sourceCode, entry.colonToken, entry.valueToken)
+			);
+			const shouldAlign = node.loc.start.line !== node.loc.end.line
+				&& alignmentEntries.length > 1
+				&& alignmentEntries.some((entry) => entry.afterText.length > 1);
+			const targetWidth = shouldAlign
+				? Math.max(
+					...alignmentEntries.map((entry) => entry.colonToken.range[1] - entry.anchorToken.range[0] + 1)
+				)
+				: 0;
+
+			for(const entry of entries)
+			{
+				if(entry.beforeText !== '')
+				{
+					context.report({
+						node: entry.property
+						, loc: entry.colonToken.loc
+						, messageId: 'unexpectedSpaceBeforeObjectColon'
+						, fix: /^[\t ]+$/u.test(entry.beforeText)
+							&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.colonToken)
+							? (fixer) => buildObjectColonBeforeFix(fixer, entry.leftToken, entry.colonToken)
+							: null
+					});
+				}
+
+				if(entry.colonToken.loc.end.line !== entry.valueToken.loc.start.line
+					|| !/^[\t ]*$/u.test(entry.afterText)
+					|| hasCommentsBetween(sourceCode, entry.colonToken, entry.valueToken)
+				){
+					continue;
+				}
+
+				const replacement = shouldAlign
+					? ' '.repeat(Math.max(1, targetWidth - (entry.colonToken.range[1] - entry.anchorToken.range[0])))
+					: ' ';
+
+				if(entry.afterText === replacement)
+				{
+					continue;
+				}
+
+				if(!shouldAlign && entry.afterText.length > 0)
+				{
+					continue;
+				}
+
+				context.report({
+					node: entry.property
+					, loc: entry.colonToken.loc
+					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue' : 'expectedSpaceAfterObjectColon'
+					, fix: (fixer) => buildObjectColonAfterFix(fixer, entry.colonToken, entry.valueToken, replacement)
+				});
+			}
+		}
 
 		function isGroupedRowPair(node, leftToken, rightToken)
 		{
@@ -164,7 +307,17 @@ export default {
 
 		function checkNode(node)
 		{
-			if(!SUPPORTED_TYPES.has(node.type) || node.loc.start.line === node.loc.end.line)
+			if(!SUPPORTED_TYPES.has(node.type))
+			{
+				return;
+			}
+
+			if(OBJECT_TYPES.has(node.type))
+			{
+				checkObjectColonSpacing(node);
+			}
+
+			if(node.loc.start.line === node.loc.end.line)
 			{
 				return;
 			}

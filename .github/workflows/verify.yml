@@ -1,0 +1,101 @@
+name: Verify packages
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version to use for verification.
+        required: false
+        type: string
+        default: '22'
+      php-version:
+        description: PHP version to use for verification.
+        required: false
+        type: string
+        default: '8.2'
+      upload-coverage:
+        description: Upload coverage reports to Codecov.
+        required: false
+        type: boolean
+        default: false
+      upload-npm-package:
+        description: Upload a packed npm tarball for a downstream publish job.
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify packages
+    runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Composer dependencies
+        run: composer --working-dir=packages/php install --no-interaction --prefer-dist
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Generate coverage
+        if: ${{ inputs.upload-coverage }}
+        run: npm run coverage
+
+      - name: Upload coverage to Codecov
+        if: ${{ inputs.upload-coverage && env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          files: ./packages/js/coverage/lcov.info,./packages/php/build/logs/clover.xml
+          fail_ci_if_error: true
+
+      - name: Skip Codecov upload
+        if: ${{ inputs.upload-coverage && env.CODECOV_TOKEN == '' }}
+        run: echo "CODECOV_TOKEN is not configured; skipping Codecov upload."
+
+      - name: Verify npm package contents
+        run: npm pack ./packages/js --dry-run
+
+      - name: Pack npm package
+        if: ${{ inputs.upload-npm-package }}
+        run: |
+          mkdir -p build/npm-package
+          npm pack ./packages/js --pack-destination build/npm-package --json
+
+      - name: Upload npm package
+        if: ${{ inputs.upload-npm-package }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: build/npm-package/*.tgz
+          if-no-files-found: error
+          retention-days: 7
