@@ -2,7 +2,7 @@
   "name": "sm-no-saccade-style",
   "license": "Apache-2.0",
   "author": "Sean Morris",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ESLint style plugin for left-rail punctuation, Allman blocks, tabs, and tight control parens.",
   "keywords": [
     "eslint",

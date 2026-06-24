@@ -22,5 +22,5 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 ## Language Boundaries
 
 - The JavaScript package applies list rules to arrays, objects, object patterns, and array patterns.
-- The PHP package applies list rules to arrays and destructuring lists, not to function argument or parameter lists.
+- The PHP package applies list rules to arrays, `array()` forms, `list()` destructuring, destructuring patterns, and vertical function or method calls.
 - The PHP package is implemented as PHP-CS-Fixer fixers; consumers use `php-cs-fixer check` and `php-cs-fixer fix`.

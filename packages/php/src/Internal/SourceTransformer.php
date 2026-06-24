@@ -776,6 +776,42 @@ final class SourceTransformer
 		return $token->id === T_COMMENT || $token->id === T_DOC_COMMENT;
 	}
 
+	private static function isClassLikeBodyBrace(array $tokens, int $braceIndex): bool
+	{
+		$classLikeIds = [
+			T_CLASS => true
+			, T_INTERFACE => true
+			, T_TRAIT => true
+		];
+
+		if(defined('T_ENUM'))
+		{
+			$classLikeIds[T_ENUM] = true;
+		}
+
+		for($index = $braceIndex - 1; $index >= 0; $index -= 1)
+		{
+			$token = $tokens[$index];
+
+			if(self::isTrivia($token))
+			{
+				continue;
+			}
+
+			if($token->text === ';' || $token->text === '{' || $token->text === '}')
+			{
+				return false;
+			}
+
+			if(isset($classLikeIds[$token->id]))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private static function isFirstNonWhitespaceOnLine(string $code, int $offset): bool
 	{
 		$start = self::lineStartOffsetForOffset($code, $offset);
@@ -1262,6 +1298,7 @@ final class SourceTransformer
 		$tokens = self::tokens($code);
 		$interpolated = self::interpolationTokenMap($tokens);
 		$dynamicMemberBraces = self::dynamicMemberBraceMap($tokens);
+		$closingForOpening = array_flip(self::closingRailPairs($tokens));
 		$replacements = [];
 
 		foreach($tokens as $index => $token)
@@ -1284,6 +1321,26 @@ final class SourceTransformer
 				continue;
 			}
 
+			if(self::hasCommentBetween($tokens, $previous, $index))
+			{
+				continue;
+			}
+
+			$between = substr($code, self::tokenEnd($tokens[$previous]), $token->pos - self::tokenEnd($tokens[$previous]));
+			$matchingClose = $closingForOpening[$index] ?? null;
+
+			if($matchingClose !== null
+				&& self::isClassLikeBodyBrace($tokens, $index)
+				&& self::tokenLine($tokens[$matchingClose]) === self::tokenLine($token)
+			){
+				if($between !== ' ')
+				{
+					$replacements[] = [self::tokenEnd($tokens[$previous]), $token->pos, ' '];
+				}
+
+				continue;
+			}
+
 			if($next !== null
 				&& $tokens[$next]->text === '}'
 				&& self::tokenLine($tokens[$previous]) === self::tokenLine($token)
@@ -1292,15 +1349,9 @@ final class SourceTransformer
 				continue;
 			}
 
-			if(self::hasCommentBetween($tokens, $previous, $index))
-			{
-				continue;
-			}
-
 			$inline = self::isInlineBrace($tokens, $index);
 			$multilineHead = $tokens[$previous]->text === ')'
 				&& self::tokenLine($tokens[$previous]) > self::headStartLine($tokens, $previous);
-			$between = substr($code, self::tokenEnd($tokens[$previous]), $token->pos - self::tokenEnd($tokens[$previous]));
 
 			if($inline || $multilineHead)
 			{

@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+
 import { RuleTester } from 'eslint';
 
 import rule from '../source/rules/leading-comma-lists.js';
@@ -27,6 +29,16 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	short:        1
 	, longerName: 2
 	, mid:        3
+};`
+		, `const x = { a:  1 };`
+		, `const x = {
+	a:
+		1
+	, b: 2
+};`
+		, `const x = {
+	a: /* keep comment */ 1
+	, b: 2
 };`
 		, `const x = [
 	a
@@ -167,6 +179,13 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, errors: [
 				{ messageId: 'unexpectedSpaceBeforeObjectColon' }
 				, { messageId: 'expectedSpaceAfterObjectColon' }
+			]
+		}
+		, {
+			code: `const x = { a /* keep comment */ : 1 };`
+			, output: null
+			, errors: [
+				{ messageId: 'unexpectedSpaceBeforeObjectColon' }
 			]
 		}
 		, {
@@ -379,4 +398,39 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			]
 		}
 	]
+});
+
+const listeners = rule.create({ sourceCode: {} });
+
+assert.doesNotThrow(() => {
+	listeners.ObjectExpression({
+		type: 'Identifier'
+	});
+});
+
+const mockListeners = rule.create({
+	sourceCode: {
+		getTokensBetween() {
+			return [];
+		}
+	}
+});
+
+assert.doesNotThrow(() => {
+	mockListeners.ObjectExpression({
+		type: 'ObjectExpression'
+		, loc: {
+			start: { line: 1 }
+			, end: { line: 1 }
+		}
+		, properties: [
+			{
+				type: 'Property'
+				, shorthand: false
+				, method: false
+				, key: {}
+				, value: {}
+			}
+		]
+	});
 });

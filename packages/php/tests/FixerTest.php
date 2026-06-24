@@ -45,6 +45,30 @@ PHP
 		);
 	}
 
+	public function testAllmanTabsFixerAllowsSingleLineClassBodies(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+class FakeHttpKrest extends Krest { protected static $Http; }
+
+class InlineFakeHttpKrest extends Krest { protected static $Http; }
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+class FakeHttpKrest extends Krest
+{ protected static $Http; }
+
+class InlineFakeHttpKrest extends Krest { protected static $Http; }
+
+PHP
+			)
+		);
+	}
+
 	public function testAllmanTabsFixerPreservesDynamicMemberAccessBraces(): void
 	{
 		$this->assertSame(
@@ -289,6 +313,62 @@ PHP
 		);
 	}
 
+	public function testFinalCommaLineAllowMode(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = [
+	'a'
+	, 'b'
+	,
+];
+
+PHP
+			, $this->apply(
+				new FinalCommaLineFixer()
+				, <<<'PHP'
+<?php
+$value = [
+	'a'
+	, 'b'
+	,
+];
+
+PHP
+			)
+		);
+	}
+
+	public function testFinalCommaLineRequireMode(): void
+	{
+		$fixer = new FinalCommaLineFixer();
+		$fixer->configure(['mode' => 'require']);
+
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = [
+	'a'
+	, 'b'
+	,
+];
+
+PHP
+			, $this->apply(
+				$fixer
+				, <<<'PHP'
+<?php
+$value = [
+	'a'
+	, 'b'
+];
+
+PHP
+			)
+		);
+	}
+
 	public function testLeadingCommaListsFixer(): void
 	{
 		$this->assertSame(
@@ -484,6 +564,26 @@ PHP
 		$this->assertArrayHasKey('multiline_whitespace_before_semicolons', $config->getRules());
 		$this->assertArrayHasKey('semicolon_after_instruction', $config->getRules());
 		$this->assertCount(7, $config->getCustomFixers());
+	}
+
+	public function testCustomFixersExposeMetadata(): void
+	{
+		$expectedNames = [
+			Fixers::LEADING_COMMA_LISTS
+			, Fixers::FINAL_COMMA_LINE
+			, Fixers::LEADING_OPERATORS
+			, Fixers::ALLMAN_TABS
+			, Fixers::NO_DOUBLE_CLOSING_GAP
+			, Fixers::NO_SPACE_CONTROL_PAREN
+			, Fixers::NO_TRAILING_WHITESPACE
+		];
+
+		foreach(Fixers::all() as $index => $fixer)
+		{
+			$this->assertSame($expectedNames[$index], $fixer->getName());
+			$this->assertNotSame('', $fixer->getDefinition()->getSummary());
+			$this->assertNotEmpty($fixer->getDefinition()->getCodeSamples());
+		}
 	}
 
 	public function testRecommendedSemicolonPresenceAndPlacementRules(): void
