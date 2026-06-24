@@ -198,6 +198,15 @@ const user = {
 };
 ```
 
+Object colons allow no space before `:` and at least one space after `:`. If any value in a multiline object is padded for alignment, the values are aligned as a group.
+
+```js
+const services = {
+	ksqlServer:  'http://ksql-server:8088/info'
+	, krestApi: 'http://krest-server:8082/topics'
+};
+```
+
 ### Continuation operators
 
 Put multiline continuation operators at the beginning of the continued line.

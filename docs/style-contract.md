@@ -6,6 +6,8 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 
 - Multiline list commas lead continued items.
 - Final comma-only lines are forbidden in the recommended preset.
+- PHP array arrows keep at least one space after `=>`; single spacing before `=>` is accepted, and a multiline list is realigned only when at least one item has more than one space before `=>`.
+- JavaScript object colons allow no space before `:` and at least one space after `:`; single spacing after `:` is accepted, and a multiline object is realigned only when at least one item has more than one space after `:`.
 - Multiline continuation operators lead the continued line.
 - Normal declarations and block forms use Allman opening braces.
 - Inline function-like expressions keep opening braces on the same line.
