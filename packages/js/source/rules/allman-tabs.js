@@ -19,7 +19,8 @@ function isInlineBody(node)
 {
 	if(node.type === 'ClassBody')
 	{
-		return node.parent?.type === 'ClassExpression';
+		return node.parent?.type === 'ClassExpression'
+			|| node.loc.start.line === node.loc.end.line;
 	}
 
 	if(node.type !== 'BlockStatement')

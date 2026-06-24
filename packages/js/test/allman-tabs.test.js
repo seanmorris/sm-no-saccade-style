@@ -16,6 +16,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "promise.then(value => {\n\tbar(value);\n});"
 		, "const x = function() {\n\tbar();\n};"
 		, "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
+		, "class FakeHttpKrest extends Krest { static Http; }"
 		, "const x = {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
@@ -59,6 +60,11 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, {
 			code: "const X = class\n{\n\tmethod() {\n\t\tbar();\n\t}\n};"
 			, output: "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
+		}
+		, {
+			code: "class FakeHttpKrest extends Krest\n{ static Http; }"
+			, output: "class FakeHttpKrest extends Krest { static Http; }"
 			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
 		}
 		, {
