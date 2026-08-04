@@ -499,6 +499,19 @@ $shortName = 1;
 $longerKey = 2;
 ```
 
+Class property initializers keep at least one space before and after `=`. If any initialized property in a class body is padded before `=`, the initializers are aligned as a group.
+
+```php
+<?php
+
+class Settings
+{
+	public $short      = 1;
+	public $longerName = 2;
+	public $mid        = 3;
+}
+```
+
 Use tight control parens.
 
 ```php

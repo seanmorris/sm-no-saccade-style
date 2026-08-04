@@ -69,6 +69,99 @@ PHP
 		);
 	}
 
+	public function testAllmanTabsFixerPreservesSingleSpaceClassPropertyEquals(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+class X
+{
+	public $short = 1;
+	public $longerName = 2;
+}
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+class X
+{
+	public $short = 1;
+	public $longerName = 2;
+}
+
+PHP
+			)
+		);
+	}
+
+	public function testAllmanTabsFixerAlignsClassPropertyEqualsWhenAnyInitializerIsPadded(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+class X
+{
+	public $short      = 1;
+	public $longerName = 2;
+	public $mid        = 3;
+}
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+class X
+{
+	public $short  = 1;
+	public $longerName = 2;
+	public $mid = 3;
+}
+
+PHP
+			)
+		);
+	}
+
+	public function testAllmanTabsFixerEnsuresSpaceAroundClassPropertyEquals(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+class X
+{
+	public $short = 1;
+	public $longerName = 2;
+
+	public function run($value = 1)
+	{
+		$local = 2;
+	}
+}
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+class X
+{
+	public $short=1;
+	public $longerName =2;
+
+	public function run($value = 1)
+	{
+		$local = 2;
+	}
+}
+
+PHP
+			)
+		);
+	}
+
 	public function testAllmanTabsFixerPreservesDynamicMemberAccessBraces(): void
 	{
 		$this->assertSame(

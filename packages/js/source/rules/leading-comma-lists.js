@@ -57,6 +57,16 @@ function buildObjectColonAfterFix(fixer, colonToken, valueToken, spacing)
 	return fixer.replaceTextRange([colonToken.range[1], valueToken.range[0]], spacing);
 }
 
+function buildClassPropertyEqualsBeforeFix(fixer, leftToken, equalsToken, spacing)
+{
+	return fixer.replaceTextRange([leftToken.range[1], equalsToken.range[0]], spacing);
+}
+
+function buildClassPropertyEqualsAfterFix(fixer, equalsToken, valueToken)
+{
+	return fixer.replaceTextRange([equalsToken.range[1], valueToken.range[0]], ' ');
+}
+
 function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 {
 	const firstItemToken = sourceCode.getFirstToken(lineItems[0]);
@@ -100,6 +110,9 @@ export default {
 			, unexpectedSpaceBeforeObjectColon: 'Object colons should not have preceding spaces.'
 			, expectedSpaceAfterObjectColon: 'Object colons should be followed by at least one space.'
 			, expectedAlignedObjectColonValue: 'Object values should align when any property in the object pads after the colon.'
+			, expectedSpaceBeforeClassPropertyEquals: 'Class property initializers should have at least one space before the equals sign.'
+			, expectedSpaceAfterClassPropertyEquals: 'Class property initializers should have at least one space after the equals sign.'
+			, expectedAlignedClassPropertyEquals: 'Class property equals signs should align when any property in the class pads before the equals sign.'
 		}
 	}
 	, create(context) {
@@ -227,6 +240,114 @@ export default {
 					, loc: entry.colonToken.loc
 					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue' : 'expectedSpaceAfterObjectColon'
 					, fix: (fixer) => buildObjectColonAfterFix(fixer, entry.colonToken, entry.valueToken, replacement)
+				});
+			}
+		}
+
+		function getClassPropertyEqualsToken(property)
+		{
+			if(!property.value)
+			{
+				return null;
+			}
+
+			const token = sourceCode.getTokenBefore(property.value);
+
+			return token?.value === '=' ? token : null;
+		}
+
+		function collectClassPropertyEqualsEntries(node)
+		{
+			const entries = [];
+
+			for(const property of node.body)
+			{
+				if(property.type !== 'PropertyDefinition' && property.type !== 'FieldDefinition')
+				{
+					continue;
+				}
+
+				const equalsToken = getClassPropertyEqualsToken(property);
+
+				if(!equalsToken)
+				{
+					continue;
+				}
+
+				const leftToken = sourceCode.getTokenBefore(equalsToken);
+				const valueToken = sourceCode.getTokenAfter(equalsToken);
+
+				/* c8 ignore next 4 */
+				if(!leftToken || !valueToken)
+				{
+					continue;
+				}
+
+				entries.push({
+					property
+					, equalsToken
+					, leftToken
+					, valueToken
+					, anchorToken: sourceCode.getFirstToken(property)
+					, beforeText: sourceCode.text.slice(leftToken.range[1], equalsToken.range[0])
+					, afterText: sourceCode.text.slice(equalsToken.range[1], valueToken.range[0])
+				});
+			}
+
+			return entries;
+		}
+
+		function checkClassPropertyEqualsSpacing(node)
+		{
+			const entries = collectClassPropertyEqualsEntries(node);
+			const alignmentEntries = entries.filter((entry) =>
+				entry.leftToken.loc.end.line === entry.equalsToken.loc.start.line
+				&& /^[\t ]*$/u.test(entry.beforeText)
+				&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
+			);
+			const shouldAlign = node.loc.start.line !== node.loc.end.line
+				&& alignmentEntries.length > 1
+				&& alignmentEntries.some((entry) => entry.beforeText.length > 1);
+			const targetWidth = shouldAlign
+				? Math.max(
+					...alignmentEntries.map((entry) => entry.leftToken.range[1] - entry.anchorToken.range[0] + 1)
+				)
+				: 0;
+
+			for(const entry of entries)
+			{
+				if(entry.leftToken.loc.end.line === entry.equalsToken.loc.start.line
+					&& /^[\t ]*$/u.test(entry.beforeText)
+					&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
+				){
+					const replacement = shouldAlign
+						? ' '.repeat(Math.max(1, targetWidth - (entry.leftToken.range[1] - entry.anchorToken.range[0])))
+						: ' ';
+
+					if(entry.beforeText !== replacement && (shouldAlign || entry.beforeText.length === 0))
+					{
+						context.report({
+							node: entry.property
+							, loc: entry.equalsToken.loc
+							, messageId: shouldAlign ? 'expectedAlignedClassPropertyEquals' : 'expectedSpaceBeforeClassPropertyEquals'
+							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(fixer, entry.leftToken, entry.equalsToken, replacement)
+						});
+					}
+				}
+
+				if(entry.equalsToken.loc.end.line !== entry.valueToken.loc.start.line
+					|| !/^[\t ]*$/u.test(entry.afterText)
+					|| hasCommentsBetween(sourceCode, entry.equalsToken, entry.valueToken)
+					|| entry.afterText.includes(' ')
+				){
+					continue;
+				}
+
+				context.report({
+					node: entry.property
+					, loc: entry.equalsToken.loc
+					, messageId: 'expectedSpaceAfterClassPropertyEquals'
+					, fix: (fixer) => buildClassPropertyEqualsAfterFix(fixer, entry.equalsToken, entry.valueToken)
 				});
 			}
 		}
@@ -420,6 +541,7 @@ export default {
 		return {
 			ArrayExpression: checkNode
 			, ArrayPattern: checkNode
+			, ClassBody: checkClassPropertyEqualsSpacing
 			, ObjectExpression: checkNode
 			, ObjectPattern: checkNode
 		};

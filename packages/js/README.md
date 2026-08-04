@@ -351,6 +351,17 @@ const shortName = 1;
 const longerKey = 2;
 ```
 
+Class property initializers keep at least one space before and after `=`. If any initialized property in a class body is padded before `=`, the initializers are aligned as a group.
+
+```js
+class Settings
+{
+	short      = 1;
+	longerName = 2;
+	mid        = 3;
+}
+```
+
 Use tight control parens.
 
 ```js

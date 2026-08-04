@@ -55,6 +55,7 @@ final class SourceTransformer
 		$code = self::withDynamicMemberBraceSpacing($code);
 		$code = self::withAllmanBraces($code);
 		$code = self::withTabIndentation($code);
+		$code = self::withClassPropertyAlignment($code);
 		$code = self::withClosingRails($code);
 
 		return self::withNestedCallCloserCompaction($code);
@@ -489,6 +490,206 @@ final class SourceTransformer
 		}
 
 		return $pairs;
+	}
+
+	private static function classBodySpans(array $tokens): array
+	{
+		$spans = [];
+
+		foreach(self::closingRailPairs($tokens) as $close => $open)
+		{
+			if(self::isClassLikeBodyBrace($tokens, $open))
+			{
+				$spans[] = [
+					'open' => $open
+					, 'close' => $close
+				];
+			}
+		}
+
+		return $spans;
+	}
+
+	private static function classPropertyInitializerEntries(string $code, array $tokens, array $span): array
+	{
+		$entries = [];
+		$statementStart = $span['open'] + 1;
+		$depth = 0;
+
+		for($index = $span['open'] + 1; $index < $span['close']; $index += 1)
+		{
+			$token = $tokens[$index];
+
+			if(isset(self::OPENING_DELIMITERS[$token->text]))
+			{
+				$depth += 1;
+				continue;
+			}
+
+			if(isset(self::CLOSING_DELIMITERS[$token->text]))
+			{
+				$depth -= 1;
+				continue;
+			}
+
+			if($token->text !== ';' || $depth !== 0)
+			{
+				continue;
+			}
+
+			$entries = array_merge(
+				$entries
+				, self::classPropertyStatementInitializerEntries($code, $tokens, $statementStart, $index)
+			);
+			$statementStart = $index + 1;
+		}
+
+		return $entries;
+	}
+
+	private static function classPropertyStatementInitializerEntries(string $code, array $tokens, int $start, int $end): array
+	{
+		$first = self::firstSignificantInRange($tokens, $start, $end);
+
+		if($first === null)
+		{
+			return [];
+		}
+
+		$hasVariable = false;
+		$equalsIndexes = [];
+		$depth = 0;
+
+		for($index = $first; $index <= $end; $index += 1)
+		{
+			$token = $tokens[$index];
+
+			if(isset(self::OPENING_DELIMITERS[$token->text]))
+			{
+				$depth += 1;
+				continue;
+			}
+
+			if(isset(self::CLOSING_DELIMITERS[$token->text]))
+			{
+				$depth -= 1;
+				continue;
+			}
+
+			if($depth !== 0)
+			{
+				continue;
+			}
+
+			if($token->id === T_FUNCTION || $token->id === T_CONST)
+			{
+				return [];
+			}
+
+			if($token->id === T_VARIABLE)
+			{
+				$hasVariable = true;
+				continue;
+			}
+
+			if($token->text === '=')
+			{
+				$equalsIndexes[] = $index;
+			}
+		}
+
+		if(!$hasVariable || $equalsIndexes === [])
+		{
+			return [];
+		}
+
+		$entries = [];
+
+		foreach($equalsIndexes as $equalsIndex)
+		{
+			$left = self::previousSignificant($tokens, $equalsIndex);
+			$value = self::nextSignificant($tokens, $equalsIndex);
+
+			if($left === null
+				|| $value === null
+				|| $left < $first
+				|| $value > $end
+				|| $tokens[$left]->id !== T_VARIABLE
+			){
+				continue;
+			}
+
+			$entries[] = [
+				'anchor' => $first
+				, 'left' => $left
+				, 'operator' => $equalsIndex
+				, 'value' => $value
+				, 'before' => substr($code, self::tokenEnd($tokens[$left]), $tokens[$equalsIndex]->pos - self::tokenEnd($tokens[$left]))
+				, 'after' => substr($code, self::tokenEnd($tokens[$equalsIndex]), $tokens[$value]->pos - self::tokenEnd($tokens[$equalsIndex]))
+			];
+		}
+
+		return $entries;
+	}
+
+	private static function classPropertyInitializerReplacements(string $code, array $tokens, array $entries): array
+	{
+		$alignmentEntries = [];
+		$targetWidth = 0;
+		$shouldAlign = false;
+
+		foreach($entries as $entry)
+		{
+			if(self::tokenEndLine($tokens[$entry['left']]) !== self::tokenLine($tokens[$entry['operator']])
+				|| !preg_match('/^[ \t]*$/', $entry['before'])
+				|| self::hasCommentBetween($tokens, $entry['left'], $entry['operator'])
+			){
+				continue;
+			}
+
+			$keyWidth = self::tokenEnd($tokens[$entry['left']]) - $tokens[$entry['anchor']]->pos;
+			$targetWidth = max($targetWidth, $keyWidth + 1);
+			$shouldAlign = $shouldAlign || strlen($entry['before']) > 1;
+			$entry['keyWidth'] = $keyWidth;
+			$alignmentEntries[] = $entry;
+		}
+
+		$replacements = [];
+
+		foreach($alignmentEntries as $entry)
+		{
+			$replacement = $shouldAlign
+				? str_repeat(' ', max(1, $targetWidth - $entry['keyWidth']))
+				: ' ';
+
+			if($entry['before'] !== $replacement && ($shouldAlign || $entry['before'] === ''))
+			{
+				$replacements[] = [
+					self::tokenEnd($tokens[$entry['left']])
+					, $tokens[$entry['operator']]->pos
+					, $replacement
+				];
+			}
+		}
+
+		foreach($entries as $entry)
+		{
+			if(self::tokenEndLine($tokens[$entry['operator']]) !== self::tokenLine($tokens[$entry['value']])
+				|| !preg_match('/^[ \t]*$/', $entry['after'])
+				|| str_contains($entry['after'], ' ')
+				|| self::hasCommentBetween($tokens, $entry['operator'], $entry['value'])
+			){
+				continue;
+			}
+
+			$replacements[] = [
+				self::tokenEnd($tokens[$entry['operator']])
+				, $tokens[$entry['value']]->pos
+				, ' '
+			];
+		}
+
+		return $replacements;
 	}
 
 	private static function doubleArrowAlignmentReplacements(string $code, array $tokens, array $items): array
@@ -1371,6 +1572,29 @@ final class SourceTransformer
 			{
 				$replacements[] = [self::tokenEnd($tokens[$previous]), $token->pos, $expected];
 			}
+		}
+
+		return self::applyReplacements($code, $replacements);
+	}
+
+	private static function withClassPropertyAlignment(string $code): string
+	{
+		$tokens = self::tokens($code);
+		$replacements = [];
+
+		foreach(self::classBodySpans($tokens) as $span)
+		{
+			$entries = self::classPropertyInitializerEntries($code, $tokens, $span);
+
+			if($entries === [])
+			{
+				continue;
+			}
+
+			$replacements = array_merge(
+				$replacements
+				, self::classPropertyInitializerReplacements($code, $tokens, $entries)
+			);
 		}
 
 		return self::applyReplacements($code, $replacements);

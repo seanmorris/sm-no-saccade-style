@@ -92,6 +92,15 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 		, `const x = {
 	duration: 0, weakMagnitude: 0, strongMagnitude: 0
 };`
+		, `class X {
+	short = 1;
+	longerName = 2;
+}`
+		, `class X {
+	short      = 1;
+	longerName = 2;
+	mid        = 3;
+}`
 		, `const [
 	a
 	, ...rest
@@ -186,6 +195,37 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, output: null
 			, errors: [
 				{ messageId: 'unexpectedSpaceBeforeObjectColon' }
+			]
+		}
+		, {
+			code: `class X {
+	short  = 1;
+	longerName = 2;
+	mid = 3;
+}`
+			, output: `class X {
+	short      = 1;
+	longerName = 2;
+	mid        = 3;
+}`
+			, errors: [
+				{ messageId: 'expectedAlignedClassPropertyEquals' }
+				, { messageId: 'expectedAlignedClassPropertyEquals' }
+			]
+		}
+		, {
+			code: `class X {
+	short=1;
+	longerName =2;
+}`
+			, output: `class X {
+	short = 1;
+	longerName = 2;
+}`
+			, errors: [
+				{ messageId: 'expectedSpaceBeforeClassPropertyEquals' }
+				, { messageId: 'expectedSpaceAfterClassPropertyEquals' }
+				, { messageId: 'expectedSpaceAfterClassPropertyEquals' }
 			]
 		}
 		, {
