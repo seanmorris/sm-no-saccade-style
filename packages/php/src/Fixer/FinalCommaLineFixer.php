@@ -12,7 +12,8 @@ use SeanMorris\NoSaccadeStyle\Internal\SourceTransformer;
 
 final class FinalCommaLineFixer extends AbstractNoSaccadeFixer implements ConfigurableFixerInterface
 {
-	protected array $configuration = [
+	/** @var array{mode: 'allow'|'require'|'forbid'} */
+	protected $configuration = [
 		'mode' => 'allow'
 	];
 

@@ -48,6 +48,8 @@ final class SourceTransformer
 	private const STRING_TOKEN_IDS = [
 		T_CONSTANT_ENCAPSED_STRING => true
 		, T_ENCAPSED_AND_WHITESPACE => true
+		, T_END_HEREDOC => true
+		, T_START_HEREDOC => true
 	];
 
 	public static function withAllmanTabs(string $code): string
@@ -93,7 +95,7 @@ final class SourceTransformer
 
 				if($mode === 'forbid')
 				{
-					if($commaOwnLine)
+					if($commaOwnLine && trim(self::lineText($code, self::tokenLine($comma))) === ',')
 					{
 						[$lineStart, $lineEnd] = self::lineRange($code, self::tokenLine($comma));
 						$replacements[] = [$lineStart, $lineEnd, ''];
@@ -110,8 +112,12 @@ final class SourceTransformer
 				{
 					$itemIndent = self::lineIndent($code, self::tokenLine($tokens[$lastItem['start']]));
 					$closerIndent = self::lineIndent($code, self::tokenLine($closer));
+					$comment = self::lastCommentBetween($tokens, $lastItem['end'], $finalComma);
+					$start = $comment === null
+						? self::tokenEnd($tokens[$lastItem['end']])
+						: self::tokenEnd($tokens[$comment]);
 					$replacements[] = [
-						self::tokenEnd($tokens[$lastItem['end']])
+						$start
 						, $closer->pos
 						, "\n{$itemIndent},\n{$closerIndent}"
 					];
@@ -186,8 +192,12 @@ final class SourceTransformer
 					}
 
 					$itemIndent = self::lineIndent($code, self::tokenLine($itemToken));
+					$comment = self::lastCommentBetween($tokens, $previousItem['end'], $commaIndex);
+					$start = $comment === null
+						? self::tokenEnd($tokens[$previousItem['end']])
+						: self::tokenEnd($tokens[$comment]);
 					$replacements[] = [
-						self::tokenEnd($tokens[$previousItem['end']])
+						$start
 						, $itemToken->pos
 						, "\n{$itemIndent}, "
 					];
@@ -284,8 +294,12 @@ final class SourceTransformer
 			}
 
 			$indent = self::lineIndent($code, self::tokenLine($tokens[$next]));
+			$comment = self::lastCommentBetween($tokens, $previous, $index);
+			$start = $comment === null
+				? self::tokenEnd($tokens[$previous])
+				: self::tokenEnd($tokens[$comment]);
 			$replacements[] = [
-				self::tokenEnd($tokens[$previous])
+				$start
 				, $tokens[$next]->pos
 				, "\n{$indent}{$token->text} "
 			];
@@ -428,6 +442,21 @@ final class SourceTransformer
 
 	private static function applyReplacements(string $code, array $replacements): string
 	{
+		if($replacements === [])
+		{
+			return $code;
+		}
+
+		$commentRanges = [];
+
+		foreach(self::tokens($code) as $token)
+		{
+			if(self::isComment($token))
+			{
+				$commentRanges[] = [$token->pos, self::tokenEnd($token)];
+			}
+		}
+
 		usort(
 			$replacements
 			, static fn(array $left, array $right): int => $right[0] <=> $left[0]
@@ -437,8 +466,10 @@ final class SourceTransformer
 
 		foreach($replacements as [$start, $end, $replacement])
 		{
-			if($end > $maxEnd || $start > $end)
-			{
+			if($end > $maxEnd
+				|| $start > $end
+				|| self::rangeOverlapsAny($start, $end, $commentRanges)
+			){
 				continue;
 			}
 
@@ -791,14 +822,21 @@ final class SourceTransformer
 				continue;
 			}
 
-			$between = substr($code, self::tokenEnd($token), $tokens[$next]->pos - self::tokenEnd($token));
+			$comment = self::firstCommentBetween($tokens, $index, $next);
+			$spacingEnd = $comment === null ? $tokens[$next]->pos : $tokens[$comment]->pos;
+			$between = substr($code, self::tokenEnd($token), $spacingEnd - self::tokenEnd($token));
 
 			if(str_contains($between, ' '))
 			{
 				continue;
 			}
 
-			$replacements[] = [self::tokenEnd($token), $tokens[$next]->pos, ' '];
+			if(!preg_match('/^[\t]*$/', $between))
+			{
+				continue;
+			}
+
+			$replacements[] = [self::tokenEnd($token), $spacingEnd, ' '];
 		}
 
 		return $replacements;
@@ -945,6 +983,38 @@ final class SourceTransformer
 		return false;
 	}
 
+	private static function firstCommentBetween(array $tokens, int $leftIndex, int $rightIndex): ?int
+	{
+		$start = min($leftIndex, $rightIndex) + 1;
+		$end = max($leftIndex, $rightIndex);
+
+		for($index = $start; $index < $end; $index += 1)
+		{
+			if(self::isComment($tokens[$index]))
+			{
+				return $index;
+			}
+		}
+
+		return null;
+	}
+
+	private static function lastCommentBetween(array $tokens, int $leftIndex, int $rightIndex): ?int
+	{
+		$start = min($leftIndex, $rightIndex) + 1;
+		$end = max($leftIndex, $rightIndex);
+
+		for($index = $end - 1; $index >= $start; $index -= 1)
+		{
+			if(self::isComment($tokens[$index]))
+			{
+				return $index;
+			}
+		}
+
+		return null;
+	}
+
 	private static function isAllowedCompactPair(array $tokens, array $leftItem, array $rightItem, \PhpToken $comma): bool
 	{
 		return self::tokenLine($tokens[$leftItem['start']]) === self::tokenEndLine($tokens[$leftItem['end']])
@@ -964,12 +1034,32 @@ final class SourceTransformer
 
 		$token = $tokens[$previous];
 
-		if(in_array($token->text, ['=', '(', '[', '{', ',', '=>', 'return', 'yield'], true))
+		if(in_array($token->text, [')', ']', '}', '"'], true))
 		{
-			return true;
+			return false;
 		}
 
-		return in_array($token->id, [T_RETURN, T_DOUBLE_ARROW, T_YIELD, T_FN], true);
+		return !in_array(
+			$token->id
+			, [
+				T_CLASS_C
+				, T_CONSTANT_ENCAPSED_STRING
+				, T_DIR
+				, T_END_HEREDOC
+				, T_FILE
+				, T_FUNC_C
+				, T_LINE
+				, T_METHOD_C
+				, T_NAME_FULLY_QUALIFIED
+				, T_NAME_QUALIFIED
+				, T_NAME_RELATIVE
+				, T_NS_C
+				, T_STRING
+				, T_TRAIT_C
+				, T_VARIABLE
+			]
+			, true
+		);
 	}
 
 	private static function isComment(\PhpToken $token): bool
@@ -1461,6 +1551,20 @@ final class SourceTransformer
 		{
 			if($start >= $rangeStart && $end <= $rangeEnd)
 			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static function rangeOverlapsAny(int $start, int $end, array $ranges): bool
+	{
+		foreach($ranges as [$rangeStart, $rangeEnd])
+		{
+			if(($start < $rangeEnd && $end > $rangeStart)
+				|| ($start === $end && $start > $rangeStart && $start < $rangeEnd)
+			){
 				return true;
 			}
 		}
