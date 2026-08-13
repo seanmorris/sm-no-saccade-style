@@ -3,7 +3,7 @@
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
 ```sh
-version=0.1.2
+version=0.1.3
 npm version --workspace sm-no-saccade-style "$version" --no-git-tag-version
 git add package-lock.json packages/js/package.json
 git commit -m "Release v$version"
@@ -37,14 +37,14 @@ Manual fallback:
 
 ```sh
 npm run release:php:split
-git tag -d v0.1.2 >/dev/null 2>&1 || true
-git tag v0.1.2 split/php
+git tag -d v0.1.3 >/dev/null 2>&1 || true
+git tag v0.1.3 split/php
 git push <php-package-remote> split/php:main
-git push <php-package-remote> v0.1.2
+git push <php-package-remote> v0.1.3
 ```
 
 Use a different local split branch when needed:
 
 ```sh
-sh scripts/split-php-package.sh split/php-v0.1.1
+sh scripts/split-php-package.sh split/php-v0.1.3
 ```
