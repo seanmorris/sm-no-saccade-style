@@ -3,23 +3,27 @@
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
 ```sh
-version=0.1.3
+version=0.1.4
 npm version --workspace sm-no-saccade-style "$version" --no-git-tag-version
 git add package-lock.json packages/js/package.json
 git commit -m "Release v$version"
 git tag "v$version"
-git push origin main "v$version"
+git push origin master "v$version"
 ```
 
 ## npm
 
 The `Publish to npm` workflow runs on `v*.*.*` tags. It validates the tag, reuses the shared package verifier, downloads the packed tarball, and publishes it with npm trusted publishing.
 
-Configure the package on npm with this trusted publisher workflow:
+Log in to npm and configure the trusted publisher from the repository root:
 
-```text
-.github/workflows/publish-npm.yml
+```sh
+npm login
+npm run release:npm:trust
+npm run release:npm:trust:list
 ```
+
+The setup command configures package `sm-no-saccade-style` for repository `seanmorris/sm-no-saccade-style`, workflow filename `publish-npm.yml`, no GitHub environment, and the `npm publish` action. npm requires only the workflow filename, not the `.github/workflows/` path.
 
 Manual fallback:
 
@@ -29,22 +33,14 @@ npm --workspace sm-no-saccade-style publish
 
 ## Composer
 
-The `Publish Composer package` workflow runs on the same `v*.*.*` tags. It validates the tag, reuses the shared package verifier, creates a subtree split from `packages/php`, then pushes the split `main` branch and the matching version tag to the Composer package repository.
+The repository-root `composer.json` defines `seanmorris/sm-no-saccade-style`, so the same `v*.*.*` tags publish the PHP package without a subtree split or a second Git repository.
 
-Add a `COMPOSER_PACKAGE_REPOSITORY` secret containing a push-capable Git URL for the Composer package repository. Packagist should watch that split repository.
+Register `https://github.com/seanmorris/sm-no-saccade-style` with Packagist once and enable its GitHub update hook. Packagist will then read the root manifest and import new versions from the shared release tags.
 
-Manual fallback:
-
-```sh
-npm run release:php:split
-git tag -d v0.1.3 >/dev/null 2>&1 || true
-git tag v0.1.3 split/php
-git push <php-package-remote> split/php:main
-git push <php-package-remote> v0.1.3
-```
-
-Use a different local split branch when needed:
+Validate the Composer package before tagging:
 
 ```sh
-sh scripts/split-php-package.sh split/php-v0.1.3
+composer validate --strict
+composer install --no-interaction --prefer-dist
+composer test
 ```
