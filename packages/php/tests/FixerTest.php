@@ -345,6 +345,45 @@ PHP
 		);
 	}
 
+	public function testAllmanTabsFixerPreservesFlexibleHeredocAndNowdocIndentation(): void
+	{
+		$once = $this->apply(
+			new AllmanTabsFixer()
+			, <<<'PHP'
+<?php
+function strings($name) {
+    $heredoc = <<<TXT
+        hello {$name}
+        TXT;
+    $nowdoc = <<<'TXT'
+        hello {$name}
+        TXT;
+    return [$heredoc, $nowdoc];
+}
+
+PHP
+		);
+
+		$this->assertSame(
+			<<<'PHP'
+<?php
+function strings($name)
+{
+	$heredoc = <<<TXT
+        hello {$name}
+        TXT;
+	$nowdoc = <<<'TXT'
+        hello {$name}
+        TXT;
+	return [$heredoc, $nowdoc];
+}
+
+PHP
+			, $once
+		);
+		$this->assertSame($once, $this->apply(new AllmanTabsFixer(), $once));
+	}
+
 	public function testRecommendedCustomFixersAreIdempotentForDynamicMemberAccess(): void
 	{
 		$once = $this->applyMany(
@@ -510,6 +549,61 @@ PHP
 		);
 	}
 
+	public function testFinalCommaLineForbidModePreservesCommentOnCommaLine(): void
+	{
+		$fixer = new FinalCommaLineFixer();
+		$fixer->configure(['mode' => 'forbid']);
+
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = [
+	'a'
+	 // keep final-item context
+];
+
+PHP
+			, $this->apply(
+				$fixer
+				, <<<'PHP'
+<?php
+$value = [
+	'a'
+	, // keep final-item context
+];
+
+PHP
+			)
+		);
+	}
+
+	public function testFinalCommaLineRequireModePreservesCommentBeforeFinalComma(): void
+	{
+		$fixer = new FinalCommaLineFixer();
+		$fixer->configure(['mode' => 'require']);
+
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = [
+	'a' /* keep final-item context */
+	,
+];
+
+PHP
+			, $this->apply(
+				$fixer
+				, <<<'PHP'
+<?php
+$value = [
+	'a' /* keep final-item context */,
+];
+
+PHP
+			)
+		);
+	}
+
 	public function testLeadingCommaListsFixer(): void
 	{
 		$this->assertSame(
@@ -528,6 +622,33 @@ PHP
 $value = [
 	'a',
 	'b'
+];
+
+PHP
+			)
+		);
+	}
+
+	public function testLeadingCommaListsFixerPreservesCommentsAroundCommas(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = [
+	'a' /* keep before comma */
+	, 'b', /* keep after comma */
+	'c'
+];
+
+PHP
+			, $this->apply(
+				new LeadingCommaListsFixer()
+				, <<<'PHP'
+<?php
+$value = [
+	'a' /* keep before comma */,
+	'b', /* keep after comma */
+	'c'
 ];
 
 PHP
@@ -612,6 +733,120 @@ PHP
 		);
 	}
 
+	public function testLeadingCommaListsFixerPreservesCommentAfterDoubleArrow(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$value = ['key' => /* keep value context */1];
+
+PHP
+			, $this->apply(
+				new LeadingCommaListsFixer()
+				, <<<'PHP'
+<?php
+$value = ['key' =>/* keep value context */1];
+
+PHP
+			)
+		);
+	}
+
+	public function testLeadingCommaListsFixerRecognizesExpressionAndDestructuringContexts(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+[
+	$first
+	, [
+		$second
+		, $third
+	]
+] = $row;
+
+foreach($rows as $key => [
+	$id
+	, $name
+]) {}
+
+$value = $ready
+	? [
+		'yes'
+		, true
+	]
+	: [
+		'no'
+		, false
+	];
+
+$merged = [
+	...[
+		'a'
+		, 'b'
+	]
+	, 'c'
+];
+
+PHP
+			, $this->apply(
+				new LeadingCommaListsFixer()
+				, <<<'PHP'
+<?php
+[
+	$first,
+	[
+		$second,
+		$third
+	]
+] = $row;
+
+foreach($rows as $key => [
+	$id,
+	$name
+]) {}
+
+$value = $ready
+	? [
+		'yes',
+		true
+	]
+	: [
+		'no',
+		false
+	];
+
+$merged = [
+	...[
+		'a',
+		'b'
+	],
+	'c'
+];
+
+PHP
+			)
+		);
+	}
+
+	public function testFinalCommaLineRequireModeDoesNotTreatArrayOffsetAsList(): void
+	{
+		$fixer = new FinalCommaLineFixer();
+		$fixer->configure(['mode' => 'require']);
+		$code = <<<'PHP'
+<?php
+$value = $rows[
+	$key
+];
+$character = 'value'[
+	0
+];
+
+PHP;
+
+		$this->assertSame($code, $this->apply($fixer, $code));
+	}
+
 	public function testLeadingOperatorsFixer(): void
 	{
 		$this->assertSame(
@@ -631,6 +866,46 @@ $ready = $loaded &&
 PHP
 			)
 		);
+	}
+
+	public function testLeadingOperatorsFixerPreservesCommentBeforeOperator(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$ready = $loaded /* keep condition context */
+	&& $valid;
+
+PHP
+			, $this->apply(
+				new LeadingOperatorsFixer()
+				, <<<'PHP'
+<?php
+$ready = $loaded /* keep condition context */ &&
+	$valid;
+
+PHP
+			)
+		);
+	}
+
+	public function testRecommendedCustomFixersPreserveCommentsAndRemainIdempotent(): void
+	{
+		$input = <<<'PHP'
+<?php
+$value = [
+	'a' /* before comma */,
+	'b' =>/* after arrow */1
+	, // after final comma
+];
+$ready = $loaded /* before operator */ &&
+	$valid;
+
+PHP;
+		$once = $this->applyMany($this->recommendedCustomFixers(), $input);
+
+		$this->assertSame($this->commentTexts($input), $this->commentTexts($once));
+		$this->assertSame($once, $this->applyMany($this->recommendedCustomFixers(), $once));
 	}
 
 	public function testNoDoubleClosingGapFixer(): void
@@ -768,6 +1043,21 @@ PHP
 		}
 
 		return $tokens->generateCode();
+	}
+
+	private function commentTexts(string $code): array
+	{
+		$comments = [];
+
+		foreach(\PhpToken::tokenize($code, TOKEN_PARSE) as $token)
+		{
+			if($token->id === T_COMMENT || $token->id === T_DOC_COMMENT)
+			{
+				$comments[] = $token->text;
+			}
+		}
+
+		return $comments;
 	}
 
 	private function recommendedCustomFixers(): array

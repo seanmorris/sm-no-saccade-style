@@ -185,7 +185,7 @@ return SeanMorris\NoSaccadeStyle\ConfigFactory::recommended($finder);
 Run:
 
 ```sh
-vendor/bin/php-cs-fixer check --diff
+vendor/bin/php-cs-fixer fix --dry-run --diff
 vendor/bin/php-cs-fixer fix
 ```
 
