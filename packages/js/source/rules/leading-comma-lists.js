@@ -146,6 +146,35 @@ export default {
 			return itemToken;
 		}
 
+		function getListItemAnchorToken(item)
+		{
+			const itemToken = sourceCode.getFirstToken(item);
+
+			if(!item.method)
+			{
+				return itemToken;
+			}
+
+			const comments = sourceCode.getCommentsBefore(item);
+
+			if(comments.length !== 1)
+			{
+				return itemToken;
+			}
+
+			const [comment] = comments;
+			const previousToken = sourceCode.getTokenBefore(comment);
+
+			if(comment.type === 'Block'
+				&& comment.value.startsWith('*')
+				&& previousToken?.value === ','
+			){
+				return comment;
+			}
+
+			return itemToken;
+		}
+
 		function collectObjectColonEntries(node)
 		{
 			const entries = [];
@@ -454,7 +483,7 @@ export default {
 
 			for(let i = 1; i < items.length; i += 1)
 			{
-				const itemToken = sourceCode.getFirstToken(items[i]);
+				const itemToken = getListItemAnchorToken(items[i]);
 				const commaToken = sourceCode.getTokenBefore(itemToken);
 
 				/* c8 ignore next 4 */
@@ -507,7 +536,7 @@ export default {
 			{
 				const itemToken = sourceCode.getLastToken(items[i]);
 				const commaToken = sourceCode.getTokenAfter(itemToken);
-				const nextItemToken = sourceCode.getFirstToken(items[i + 1]);
+				const nextItemToken = getListItemAnchorToken(items[i + 1]);
 
 				/* c8 ignore next 4 */
 				if(!commaToken || commaToken.value !== ',')
