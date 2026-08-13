@@ -3,7 +3,7 @@
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
 ```sh
-version=0.1.4
+version=0.1.7
 npm version --workspace sm-no-saccade-style "$version" --no-git-tag-version
 git add package-lock.json packages/js/package.json
 git commit -m "Release v$version"
