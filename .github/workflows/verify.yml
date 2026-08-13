@@ -58,7 +58,7 @@ jobs:
         run: npm ci
 
       - name: Install Composer dependencies
-        run: composer --working-dir=packages/php install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist
 
       - name: Run lint
         run: npm run lint

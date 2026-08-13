@@ -8,13 +8,14 @@
   "scripts": {
     "lint": "npm run lint:js && npm run lint:php",
     "lint:js": "npm --workspace sm-no-saccade-style run lint",
-    "lint:php": "composer --working-dir=packages/php lint",
+    "lint:php": "composer lint",
     "test": "npm run test:js && npm run test:php",
     "test:js": "npm --workspace sm-no-saccade-style test",
-    "test:php": "composer --working-dir=packages/php test",
+    "test:php": "composer test",
     "coverage": "npm run coverage:js && npm run coverage:php",
     "coverage:js": "npm --workspace sm-no-saccade-style run coverage",
-    "coverage:php": "composer --working-dir=packages/php coverage",
-    "release:php:split": "sh scripts/split-php-package.sh"
+    "coverage:php": "composer coverage",
+    "release:npm:trust": "npx --yes npm@^11.5.1 trust github sm-no-saccade-style --repository seanmorris/sm-no-saccade-style --file publish-npm.yml --allow-publish",
+    "release:npm:trust:list": "npx --yes npm@^11.5.1 trust list sm-no-saccade-style"
   }
 }

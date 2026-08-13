@@ -47,10 +47,10 @@ Install JavaScript dependencies from the repository root:
 npm install
 ```
 
-Install PHP dependencies from the Composer package root:
+Install PHP dependencies from the repository root:
 
 ```sh
-composer --working-dir=packages/php install
+composer install
 ```
 
 Run all checks:
@@ -65,6 +65,6 @@ Run package-specific checks:
 ```sh
 npm run lint:js
 npm run test:js
-composer --working-dir=packages/php lint
-composer --working-dir=packages/php test
+composer lint
+composer test
 ```
