@@ -174,7 +174,9 @@ final class SourceTransformer
 				}
 
 				$comma = $tokens[$commaIndex];
-				$itemToken = $tokens[$item['start']];
+				$itemAnchor = self::singleDocCommentBetween($tokens, $commaIndex, $item['start'])
+					?? $item['start'];
+				$itemToken = $tokens[$itemAnchor];
 
 				if(self::isAllowedCompactPair($tokens, $previousItem, $item, $comma))
 				{
@@ -186,7 +188,7 @@ final class SourceTransformer
 
 				if(!$commaOnItemLine || !$commaLeading)
 				{
-					if(self::hasCommentBetween($tokens, $commaIndex, $item['start']))
+					if(self::hasCommentBetween($tokens, $commaIndex, $itemAnchor))
 					{
 						continue;
 					}
@@ -207,7 +209,7 @@ final class SourceTransformer
 
 				$spacing = substr($code, self::tokenEnd($comma), $itemToken->pos - self::tokenEnd($comma));
 
-				if($spacing !== ' ' && !self::hasCommentBetween($tokens, $commaIndex, $item['start']))
+				if($spacing !== ' ' && !self::hasCommentBetween($tokens, $commaIndex, $itemAnchor))
 				{
 					$replacements[] = [self::tokenEnd($comma), $itemToken->pos, ' '];
 				}
@@ -1013,6 +1015,30 @@ final class SourceTransformer
 		}
 
 		return null;
+	}
+
+	private static function singleDocCommentBetween(array $tokens, int $leftIndex, int $rightIndex): ?int
+	{
+		$start = min($leftIndex, $rightIndex) + 1;
+		$end = max($leftIndex, $rightIndex);
+		$comment = null;
+
+		for($index = $start; $index < $end; $index += 1)
+		{
+			if(!self::isComment($tokens[$index]))
+			{
+				continue;
+			}
+
+			if($tokens[$index]->id !== T_DOC_COMMENT || $comment !== null)
+			{
+				return null;
+			}
+
+			$comment = $index;
+		}
+
+		return $comment;
 	}
 
 	private static function isAllowedCompactPair(array $tokens, array $leftItem, array $rightItem, \PhpToken $comma): bool

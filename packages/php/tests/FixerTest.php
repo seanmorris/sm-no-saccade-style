@@ -629,6 +629,63 @@ PHP
 		);
 	}
 
+	public function testLeadingCommaListsFixerAcceptsDocCommentAfterLeadingComma(): void
+	{
+		$code = <<<'PHP'
+<?php
+$provider = [
+	'kind' => 'test'
+	, /**
+	 * Reports whether a credential exists.
+	 */
+	'has' => static function(string $name): bool
+	{
+		return $name !== '';
+	}
+];
+
+PHP;
+
+		$this->assertSame($code, $this->apply(new LeadingCommaListsFixer(), $code));
+	}
+
+	public function testLeadingCommaListsFixerMovesTrailingCommaBeforeDocComment(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+$provider = [
+	'kind' => 'test'
+	, /**
+	 * Reports whether a credential exists.
+	 */
+	'has' => static function(string $name): bool
+	{
+		return $name !== '';
+	}
+];
+
+PHP
+			, $this->apply(
+				new LeadingCommaListsFixer()
+				, <<<'PHP'
+<?php
+$provider = [
+	'kind' => 'test',
+	/**
+	 * Reports whether a credential exists.
+	 */
+	'has' => static function(string $name): bool
+	{
+		return $name !== '';
+	}
+];
+
+PHP
+			)
+		);
+	}
+
 	public function testLeadingCommaListsFixerPreservesCommentsAroundCommas(): void
 	{
 		$this->assertSame(

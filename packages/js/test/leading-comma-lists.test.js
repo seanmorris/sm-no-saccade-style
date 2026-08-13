@@ -40,6 +40,15 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 	a: /* keep comment */ 1
 	, b: 2
 };`
+		, `const provider = {
+	kind: 'test'
+	, /**
+	 * Reports whether a credential exists.
+	 */
+	has(name) {
+		return Boolean(name);
+	}
+};`
 		, `const x = [
 	a
 	, b
@@ -132,6 +141,30 @@ ruleTester.run('sm-no-saccade-style/leading-comma-lists', rule, {
 			, output: `const x = {
 	a: 1
 	, b: 2
+};`
+			, errors: [
+				{ messageId: 'expectedLeadingComma' }
+				, { messageId: 'unexpectedTrailingComma' }
+			]
+		}
+		, {
+			code: `const provider = {
+	kind: 'test',
+	/**
+	 * Reports whether a credential exists.
+	 */
+	has(name) {
+		return Boolean(name);
+	}
+};`
+			, output: `const provider = {
+	kind: 'test'
+	, /**
+	 * Reports whether a credential exists.
+	 */
+	has(name) {
+		return Boolean(name);
+	}
 };`
 			, errors: [
 				{ messageId: 'expectedLeadingComma' }
