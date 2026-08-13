@@ -35,6 +35,11 @@ ruleTester.run('sm-no-saccade-style/no-space-control-paren', rule, {
 		, `for(const item of value) {
 	use(item);
 }`
+		, `async function consume(values) {
+	for await(const value of values) {
+		void value;
+	}
+}`
 		, `if
 (foo) {
 	bar();
@@ -79,6 +84,19 @@ ruleTester.run('sm-no-saccade-style/no-space-control-paren', rule, {
 }`
 			, output: `for(const item of value) {
 	use(item);
+}`
+			, errors: [{ messageId: 'unexpectedSpace' }]
+		}
+		, {
+			code: `async function consume(values) {
+	for await (const value of values) {
+		void value;
+	}
+}`
+			, output: `async function consume(values) {
+	for await(const value of values) {
+		void value;
+	}
 }`
 			, errors: [{ messageId: 'unexpectedSpace' }]
 		}

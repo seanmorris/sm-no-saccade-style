@@ -33,6 +33,15 @@ function getKeywordToken(sourceCode, node)
 		return sourceCode.getTokenBefore(node.test, (token) => token.value === 'while');
 	}
 
+	if(node.type === 'ForOfStatement' && node.await)
+	{
+		return sourceCode.getFirstTokenBetween(
+			sourceCode.getFirstToken(node)
+			, node.left
+			, (token) => token.value === 'await'
+		);
+	}
+
 	return sourceCode.getFirstToken(node);
 }
 
