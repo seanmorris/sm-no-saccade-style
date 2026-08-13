@@ -69,6 +69,54 @@ PHP
 		);
 	}
 
+	public function testAllmanTabsFixerAllowsSingleLineFunctionsMethodsAndClasses(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+function add(){ return; };
+
+class Calculator { public function add(){ return; } };
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+function add(){ return; };
+
+class Calculator { public function add(){ return; } };
+
+PHP
+			)
+		);
+	}
+
+	public function testAllmanTabsFixerAllowsSingleLineMethodInMultilineClass(): void
+	{
+		$this->assertSame(
+			<<<'PHP'
+<?php
+class Calculator
+{
+	public function add(){ return; }
+}
+
+PHP
+			, $this->apply(
+				new AllmanTabsFixer()
+				, <<<'PHP'
+<?php
+class Calculator
+{
+	public function add(){ return; }
+}
+
+PHP
+			)
+		);
+	}
+
 	public function testAllmanTabsFixerPreservesSingleSpaceClassPropertyEquals(): void
 	{
 		$this->assertSame(

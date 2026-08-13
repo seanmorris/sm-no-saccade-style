@@ -28,6 +28,16 @@ function isInlineBody(node)
 		return false;
 	}
 
+	if(node.loc.start.line === node.loc.end.line
+		&& (
+			node.parent?.type === 'ArrowFunctionExpression'
+			|| node.parent?.type === 'FunctionDeclaration'
+			|| node.parent?.type === 'FunctionExpression'
+		)
+	){
+		return true;
+	}
+
 	if(node.parent?.type === 'ArrowFunctionExpression')
 	{
 		return true;

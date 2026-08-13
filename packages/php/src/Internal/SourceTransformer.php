@@ -1021,6 +1021,26 @@ final class SourceTransformer
 		return trim($before, " \t") === '';
 	}
 
+	private static function isFunctionBodyBrace(array $tokens, int $braceIndex): bool
+	{
+		for($index = $braceIndex - 1; $index >= 0; $index -= 1)
+		{
+			$token = $tokens[$index];
+
+			if($token->text === ';' || $token->text === '{' || $token->text === '}')
+			{
+				return false;
+			}
+
+			if($token->id === T_FUNCTION)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private static function isInlineBrace(array $tokens, int $braceIndex): bool
 	{
 		for($index = $braceIndex - 1; $index >= 0; $index -= 1)
@@ -1529,6 +1549,14 @@ final class SourceTransformer
 
 			$between = substr($code, self::tokenEnd($tokens[$previous]), $token->pos - self::tokenEnd($tokens[$previous]));
 			$matchingClose = $closingForOpening[$index] ?? null;
+			$singleLineFunctionBody = $matchingClose !== null
+				&& self::isFunctionBodyBrace($tokens, $index)
+				&& self::tokenLine($tokens[$matchingClose]) === self::tokenLine($token);
+
+			if($singleLineFunctionBody)
+			{
+				continue;
+			}
 
 			if($matchingClose !== null
 				&& self::isClassLikeBodyBrace($tokens, $index)

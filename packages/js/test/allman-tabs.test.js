@@ -17,6 +17,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "const x = function() {\n\tbar();\n};"
 		, "const X = class {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "class FakeHttpKrest extends Krest { static Http; }"
+		, "function add(){ return; };\nclass Calculator { add(){ return; }; };"
+		, "class Calculator\n{\n\tadd(){ return; };\n}"
 		, "const x = {\n\tmethod() {\n\t\tbar();\n\t}\n};"
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"

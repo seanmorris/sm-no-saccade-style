@@ -433,15 +433,14 @@ $ids = array_map(
 );
 ```
 
-Empty inline bodies are allowed for compact declarations.
+Single-line function, method, and class bodies are allowed to stay compact.
 
 ```php
 <?php
 
-final class NullLogger
-{
-	public function info(): void {}
-}
+function add(){ return; };
+
+final class NullLogger { public function info(): void { return; } };
 
 if($disabled){}
 ```

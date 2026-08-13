@@ -308,13 +308,12 @@ class Scene
 }
 ```
 
-Empty inline bodies are allowed for compact declarations.
+Single-line function, method, and class bodies are allowed to stay compact.
 
 ```js
-class NullLogger
-{
-	info(){}
-}
+function add(){ return; };
+
+class NullLogger { info(){ return; }; };
 
 if(disabled){}
 ```

@@ -12,7 +12,7 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 - Class property initializer `=` signs keep at least one space before and after `=`; single spacing before `=` is accepted, and a class body is realigned only when at least one initialized property has more than one space before `=`.
 - Multiline continuation operators lead the continued line.
 - Normal declarations and block forms use Allman opening braces.
-- Inline function-like expressions, inline class-like expressions, inline object methods, empty compact bodies, and single-line class bodies keep opening braces on the same line.
+- Inline function-like expressions, inline class-like expressions, inline object methods, empty compact bodies, and single-line function, method, and class bodies keep opening braces on the same line.
 - Multiline control/function heads keep the opening brace on the same line as the closing parenthesis.
 - Indentation uses tabs.
 - Closing delimiters align with their opening rail.
