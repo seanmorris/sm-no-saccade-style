@@ -21,6 +21,7 @@ use SeanMorris\NoSaccadeStyle\Fixers;
 
 final class FixerTest extends TestCase
 {
+
 	public function testAllmanTabsFixer(): void
 	{
 		$this->assertSame(
@@ -50,7 +51,10 @@ PHP
 		$this->assertSame(
 			<<<'PHP'
 <?php
-class FakeHttpKrest extends Krest { protected static $Http; }
+class FakeHttpKrest extends Krest
+{
+	protected static $Http;
+}
 
 class InlineFakeHttpKrest extends Krest { protected static $Http; }
 
@@ -1036,7 +1040,7 @@ PHP
 		$this->assertArrayHasKey(Fixers::LEADING_OPERATORS, $config->getRules());
 		$this->assertArrayHasKey('multiline_whitespace_before_semicolons', $config->getRules());
 		$this->assertArrayHasKey('semicolon_after_instruction', $config->getRules());
-		$this->assertCount(7, $config->getCustomFixers());
+		$this->assertCount(8, $config->getCustomFixers());
 	}
 
 	public function testCustomFixersExposeMetadata(): void
@@ -1049,6 +1053,7 @@ PHP
 			, Fixers::NO_DOUBLE_CLOSING_GAP
 			, Fixers::NO_SPACE_CONTROL_PAREN
 			, Fixers::NO_TRAILING_WHITESPACE
+			, Fixers::DECLARATION_SPACING
 		];
 
 		foreach(Fixers::all() as $index => $fixer)

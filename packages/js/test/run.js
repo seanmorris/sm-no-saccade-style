@@ -7,3 +7,4 @@ import './no-double-closing-gap.test.js';
 import './no-space-control-paren.test.js';
 import './no-trailing-whitespace.test.js';
 import './recommended-config.test.js';
+import './readable-layout.test.js';

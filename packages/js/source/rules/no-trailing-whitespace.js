@@ -26,14 +26,17 @@ export default {
 			unexpectedTrailingWhitespace: 'Trailing whitespace is not allowed outside strings.'
 		}
 	}
+
 	, create(context) {
 		const sourceCode = context.sourceCode;
 		const templateRanges = [];
 
 		return {
+
 			TemplateElement(node) {
 				templateRanges.push(node.range);
 			}
+
 			, 'Program:exit'() {
 				const lineStarts = getLineStartIndices(sourceCode);
 

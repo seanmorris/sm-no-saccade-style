@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SeanMorris\NoSaccadeStyle;
 
 use SeanMorris\NoSaccadeStyle\Fixer\AllmanTabsFixer;
+use SeanMorris\NoSaccadeStyle\Fixer\DeclarationSpacingFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\FinalCommaLineFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\LeadingCommaListsFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\LeadingOperatorsFixer;
@@ -15,6 +16,7 @@ use SeanMorris\NoSaccadeStyle\Fixer\NoTrailingWhitespaceFixer;
 final class Fixers
 {
 	public const ALLMAN_TABS = 'SeanMorris/no_saccade_allman_tabs';
+	public const DECLARATION_SPACING = 'SeanMorris/no_saccade_declaration_spacing';
 	public const FINAL_COMMA_LINE = 'SeanMorris/no_saccade_final_comma_line';
 	public const LEADING_COMMA_LISTS = 'SeanMorris/no_saccade_leading_comma_lists';
 	public const LEADING_OPERATORS = 'SeanMorris/no_saccade_leading_operators';
@@ -32,6 +34,7 @@ final class Fixers
 			, new NoDoubleClosingGapFixer()
 			, new NoSpaceControlParenFixer()
 			, new NoTrailingWhitespaceFixer()
+			, new DeclarationSpacingFixer()
 		];
 	}
 }

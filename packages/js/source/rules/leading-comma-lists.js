@@ -71,7 +71,8 @@ function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 {
 	const firstItemToken = sourceCode.getFirstToken(lineItems[0]);
 	const previousToken = sourceCode.getTokenBefore(firstItemToken);
-	const hasLeadingComma = previousToken?.value === ',' && previousToken.loc.start.line === firstItemToken.loc.start.line;
+	const hasLeadingComma = previousToken?.value === ',' && previousToken.loc.start
+		.line === firstItemToken.loc.start.line;
 	const rowStartToken = hasLeadingComma ? previousToken : firstItemToken;
 	const rowEndToken = sourceCode.getLastToken(lineItems.at(-1));
 
@@ -80,7 +81,7 @@ function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 		return null;
 	}
 
-	const indent = getLineIndent(sourceCode, rowStartToken);
+	const indent = getTokenLineIndent(sourceCode, rowStartToken);
 	const replacement = lineItems
 		.map((item, index) => {
 			const text = sourceCode.getText(item);
@@ -103,18 +104,26 @@ export default {
 		, fixable: 'code'
 		, schema: []
 		, messages: {
-			expectedLeadingComma: 'Comma should be at the beginning of the line for multiline list items.'
-			, unexpectedTrailingComma: 'Trailing comma should not stay on the previous item line in a multiline list.'
+			expectedLeadingComma:
+				'Comma should be at the beginning of the line for multiline list items.'
+			, unexpectedTrailingComma:
+				'Trailing comma should not stay on the previous item line in a multiline list.'
 			, expectedSpaceAfterLeadingComma: 'Leading comma must be followed by a space.'
-			, groupedRowTooWide: `Grouped multiline list rows should stay within column ${MAX_GROUPED_ROW_COLUMN}.`
+			, groupedRowTooWide:
+				`Grouped multiline list rows should stay within column ${MAX_GROUPED_ROW_COLUMN}.`
 			, unexpectedSpaceBeforeObjectColon: 'Object colons should not have preceding spaces.'
-			, expectedSpaceAfterObjectColon: 'Object colons should be followed by at least one space.'
-			, expectedAlignedObjectColonValue: 'Object values should align when any property in the object pads after the colon.'
-			, expectedSpaceBeforeClassPropertyEquals: 'Class property initializers should have at least one space before the equals sign.'
-			, expectedSpaceAfterClassPropertyEquals: 'Class property initializers should have at least one space after the equals sign.'
+			, expectedSpaceAfterObjectColon:
+				'Object colons should be followed by at least one space.'
+			, expectedAlignedObjectColonValue:
+				'Object values should align when any property in the object pads after the colon.'
+			, expectedSpaceBeforeClassPropertyEquals:
+				'Class property initializers should have at least one space before the equals sign.'
+			, expectedSpaceAfterClassPropertyEquals:
+				'Class property initializers should have at least one space after the equals sign.'
 			, expectedAlignedClassPropertyEquals: 'Class property equals signs should align when any property in the class pads before the equals sign.'
 		}
 	}
+
 	, create(context) {
 		const sourceCode = context.sourceCode;
 
@@ -224,7 +233,8 @@ export default {
 				&& alignmentEntries.some((entry) => entry.afterText.length > 1);
 			const targetWidth = shouldAlign
 				? Math.max(
-					...alignmentEntries.map((entry) => entry.colonToken.range[1] - entry.anchorToken.range[0] + 1)
+					...alignmentEntries.map((entry) => entry.colonToken.range[1] - entry.anchorToken
+						.range[0] + 1)
 				)
 				: 0;
 
@@ -238,7 +248,8 @@ export default {
 						, messageId: 'unexpectedSpaceBeforeObjectColon'
 						, fix: /^[\t ]+$/u.test(entry.beforeText)
 							&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.colonToken)
-							? (fixer) => buildObjectColonBeforeFix(fixer, entry.leftToken, entry.colonToken)
+							? (fixer) => buildObjectColonBeforeFix(fixer, entry.leftToken, entry
+								.colonToken)
 							: null
 					});
 				}
@@ -251,7 +262,8 @@ export default {
 				}
 
 				const replacement = shouldAlign
-					? ' '.repeat(Math.max(1, targetWidth - (entry.colonToken.range[1] - entry.anchorToken.range[0])))
+					? ' '.repeat(Math.max(1, targetWidth - (entry.colonToken.range[1] - entry
+						.anchorToken.range[0])))
 					: ' ';
 
 				if(entry.afterText === replacement)
@@ -267,8 +279,10 @@ export default {
 				context.report({
 					node: entry.property
 					, loc: entry.colonToken.loc
-					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue' : 'expectedSpaceAfterObjectColon'
-					, fix: (fixer) => buildObjectColonAfterFix(fixer, entry.colonToken, entry.valueToken, replacement)
+					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue'
+						: 'expectedSpaceAfterObjectColon'
+					, fix: (fixer) => buildObjectColonAfterFix(fixer, entry.colonToken, entry
+						.valueToken, replacement)
 				});
 			}
 		}
@@ -339,7 +353,8 @@ export default {
 				&& alignmentEntries.some((entry) => entry.beforeText.length > 1);
 			const targetWidth = shouldAlign
 				? Math.max(
-					...alignmentEntries.map((entry) => entry.leftToken.range[1] - entry.anchorToken.range[0] + 1)
+					...alignmentEntries.map((entry) => entry.leftToken.range[1] - entry.anchorToken
+						.range[0] + 1)
 				)
 				: 0;
 
@@ -350,16 +365,19 @@ export default {
 					&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
 				){
 					const replacement = shouldAlign
-						? ' '.repeat(Math.max(1, targetWidth - (entry.leftToken.range[1] - entry.anchorToken.range[0])))
+						? ' '.repeat(Math.max(1, targetWidth - (entry.leftToken.range[1] - entry
+							.anchorToken.range[0])))
 						: ' ';
 
-					if(entry.beforeText !== replacement && (shouldAlign || entry.beforeText.length === 0))
-					{
+					if(entry.beforeText !== replacement && (shouldAlign || entry.beforeText
+						.length === 0)){
 						context.report({
 							node: entry.property
 							, loc: entry.equalsToken.loc
-							, messageId: shouldAlign ? 'expectedAlignedClassPropertyEquals' : 'expectedSpaceBeforeClassPropertyEquals'
-							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(fixer, entry.leftToken, entry.equalsToken, replacement)
+							, messageId: shouldAlign ? 'expectedAlignedClassPropertyEquals'
+								: 'expectedSpaceBeforeClassPropertyEquals'
+							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(fixer, entry
+								.leftToken, entry.equalsToken, replacement)
 						});
 					}
 				}
@@ -376,14 +394,16 @@ export default {
 					node: entry.property
 					, loc: entry.equalsToken.loc
 					, messageId: 'expectedSpaceAfterClassPropertyEquals'
-					, fix: (fixer) => buildClassPropertyEqualsAfterFix(fixer, entry.equalsToken, entry.valueToken)
+					, fix: (fixer) => buildClassPropertyEqualsAfterFix(fixer, entry.equalsToken
+						, entry.valueToken)
 				});
 			}
 		}
 
 		function isGroupedRowPair(node, leftToken, rightToken)
 		{
-			return SUPPORTED_TYPES.has(node.type) && leftToken.loc.end.line === rightToken.loc.start.line;
+			return SUPPORTED_TYPES.has(node.type) && leftToken.loc.end.line === rightToken.loc.start
+				.line;
 		}
 
 		function isSingleLineNode(node)
@@ -492,10 +512,11 @@ export default {
 					continue;
 				}
 
-				if((isAllowedCompactPair(node, items[i - 1], items[i], commaToken, itemToken) && !isFirstTokenOnLine(sourceCode, commaToken))
+				if((isAllowedCompactPair(node, items[i - 1], items[i], commaToken, itemToken)
+					&& !isFirstTokenOnLine(sourceCode, commaToken))
 					|| isAllowedSpacedFinalItem(items, i)) {
 					continue;
-					}
+				}
 
 				const commaOnItemLine = commaToken.loc.start.line === itemToken.loc.start.line;
 				const commaLeading = isFirstTokenOnLine(sourceCode, commaToken);
@@ -544,8 +565,8 @@ export default {
 					continue;
 				}
 
-				if(isAllowedCompactPair(node, items[i], items[i + 1], itemToken, nextItemToken) || isAllowedSpacedFinalItem(items, i + 1))
-				{
+				if(isAllowedCompactPair(node, items[i], items[i + 1], itemToken, nextItemToken)
+					|| isAllowedSpacedFinalItem(items, i + 1)){
 					continue;
 				}
 
@@ -560,7 +581,8 @@ export default {
 						, loc: commaToken.loc
 						, messageId: 'unexpectedTrailingComma'
 						, fix: canFix
-							? (fixer) => buildMoveCommaFix(sourceCode, fixer, commaToken, nextItemToken)
+							? (fixer) => buildMoveCommaFix(sourceCode, fixer, commaToken
+								, nextItemToken)
 							: null
 					});
 				}

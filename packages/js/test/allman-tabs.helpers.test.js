@@ -23,12 +23,14 @@ const mismatchClosingTokens = [
 ];
 
 assert.equal(
-	buildMixedClosingRailFix(mismatchSourceCode, {}, mismatchPreviousToken, mismatchClosingTokens, ['\t']),
+	buildMixedClosingRailFix(mismatchSourceCode, {}, mismatchPreviousToken, mismatchClosingTokens, [
+		'\t']),
 	null
 );
 
 const fixCalls = [];
 const fixer = {
+
 	replaceTextRange(range, replacement) {
 		fixCalls.push({ range, replacement });
 
@@ -51,7 +53,9 @@ const closingTokens = [
 	, { value: ']', range: [9, 10] }
 	, { value: '}', range: [10, 11] }
 ];
-const result = buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, ['\t', '\t', '']);
+const result = buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, ['\t'
+	, '\t'
+	, '']);
 
 assert.deepEqual(result, {
 	range: [7, 11]

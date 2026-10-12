@@ -23,8 +23,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
 		, "class X\n{\n\tdestroy(entity){}\n}"
-		, "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){}\n}"
-		, "if(foo){}"
+		, "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){\n\t}\n}"
+		, "if(foo)\n{\n}"
 		, "if(foo) bar();"
 		, "if(foo)\nbar();"
 		, "if(foo)\n\tbar();"
@@ -66,8 +66,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		}
 		, {
 			code: "class FakeHttpKrest extends Krest\n{ static Http; }"
-			, output: "class FakeHttpKrest extends Krest { static Http; }"
-			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
+			, output: "class FakeHttpKrest extends Krest {\nstatic Http;\n}"
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }, { messageId: 'expandedBody' }]
 		}
 		, {
 			code: "const x = {\n\tmethod()\n\t{\n\t\tbar();\n\t}\n};"
@@ -77,7 +77,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, {
 			code: "if(foo)  \n{\n\tbar();\n}"
 			, output: "if(foo)\n{\n\tbar();\n}"
-			, errors: [{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }]
+			, errors: [
+				{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }]
 		}
 		, {
 			code: "if(foo) /* keep comment */ {\n\tbar();\n}"

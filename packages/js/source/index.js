@@ -9,12 +9,18 @@ import leadingOperators from './rules/leading-operators.js';
 import noDoubleClosingGap from './rules/no-double-closing-gap.js';
 import noSpaceControlParen from './rules/no-space-control-paren.js';
 import noTrailingWhitespace from './rules/no-trailing-whitespace.js';
+import declarationSpacing from './rules/declaration-spacing.js';
+import maxLineLength from './rules/max-line-length.js';
+import maxUnseparatedLines from './rules/max-unseparated-lines.js';
 
 const plugin = {
 	meta: {
 		name: 'sm-no-saccade-style',
 	},
 	rules: {
+		'declaration-spacing': declarationSpacing,
+		'max-line-length': maxLineLength,
+		'max-unseparated-lines': maxUnseparatedLines,
 		'allman-tabs': allmanTabs,
 		'final-comma-line': finalCommaLine,
 		'leading-comma-lists': leadingCommaLists,
@@ -33,6 +39,9 @@ plugin.configs.recommended = [
 			'@stylistic': stylistic,
 		},
 		rules: {
+			'sm-no-saccade-style/declaration-spacing': 'error',
+			'sm-no-saccade-style/max-line-length': ['error', { max: 100 }],
+			'sm-no-saccade-style/max-unseparated-lines': ['warn', { max: 10 }],
 			'sm-no-saccade-style/leading-comma-lists': 'error',
 			'sm-no-saccade-style/final-comma-line': ['error', { mode: 'forbid' }],
 			'sm-no-saccade-style/leading-operators': 'error',

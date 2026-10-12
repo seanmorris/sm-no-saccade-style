@@ -13,6 +13,7 @@ export function withReportFilter(context, filter)
 {
 	return Object.create(context, {
 		report: {
+
 			value(descriptor) {
 				if(filter(descriptor) === false)
 				{

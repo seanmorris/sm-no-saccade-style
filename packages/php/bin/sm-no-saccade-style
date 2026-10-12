@@ -1,0 +1,66 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require $_composer_autoload_path ?? dirname(__DIR__, 3) . '/vendor/autoload.php';
+
+use SeanMorris\NoSaccadeStyle\Diagnostics;
+use Symfony\Component\Finder\Finder;
+
+$options = getopt('', [
+	'max-line-length:'
+	, 'max-unseparated-lines:'
+	, 'tab-width:'
+	, 'no-ignore-literals'
+	, 'help'
+], $argumentIndex);
+
+if(isset($options['help']))
+{
+	fwrite(STDOUT
+		, "Usage: sm-no-saccade-style [--max-line-length=100] [--max-unseparated-lines=10] [--tab-width=4] [--no-ignore-literals] [files or directories...]\n");
+	exit(0);
+}
+
+try
+{
+	$paths = array_slice($argv, $argumentIndex) ?: [getcwd()];
+	$files = [];
+	foreach($paths as $path)
+	{
+		if(is_file($path))
+		{
+			$files[realpath($path)] = $path;
+			continue;
+		}
+		if(!is_dir($path)) throw new RuntimeException("Path does not exist: $path");
+		$finder = (new Finder())->files()->name('*.php')->exclude(['vendor', 'node_modules'])->in(
+			$path);
+		foreach($finder as $file) $files[$file->getRealPath()] = $file->getPathname();
+	}
+	$errors = 0;
+	foreach($files as $file)
+	{
+		$messages = Diagnostics::analyze(
+			file_get_contents($file)
+			, (int) ($options['max-line-length'] ?? 100)
+			, (int) ($options['max-unseparated-lines'] ?? 10)
+			, (int) ($options['tab-width'] ?? 4)
+			, !isset($options['no-ignore-literals'])
+		);
+		foreach($messages as $message)
+		{
+			$text = sprintf('%s:%d: %s [%s] %s', $file, $message['line'],
+				$message['severity'], $message['rule'], $message['message']);
+			fwrite(STDOUT, $text . "\n");
+			if($message['severity'] === 'error') $errors++;
+		}
+	}
+	exit($errors ? 1 : 0);
+}
+catch(Throwable $error)
+{
+	fwrite(STDERR, $error->getMessage() . "\n");
+	exit(2);
+}

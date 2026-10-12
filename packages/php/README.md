@@ -212,7 +212,8 @@ $config->registerCustomFixers(SeanMorris\NoSaccadeStyle\Fixers::all());
 $config->setIndent("\t");
 $config->setLineEnding("\n");
 $config->setRules([
-	SeanMorris\NoSaccadeStyle\Fixers::LEADING_COMMA_LISTS => true
+	SeanMorris\NoSaccadeStyle\Fixers::DECLARATION_SPACING => true
+	, SeanMorris\NoSaccadeStyle\Fixers::LEADING_COMMA_LISTS => true
 	, SeanMorris\NoSaccadeStyle\Fixers::FINAL_COMMA_LINE => ['mode' => 'forbid']
 	, SeanMorris\NoSaccadeStyle\Fixers::LEADING_OPERATORS => true
 	, SeanMorris\NoSaccadeStyle\Fixers::ALLMAN_TABS => true
@@ -236,6 +237,27 @@ return $config;
   Requires a final comma-only line before a multiline array closer.
 - `forbid`
   Removes final comma-only lines. This is the recommended preset.
+
+## Line length and separation
+
+The recommended preset uses a 100-column limit and four-column tab stops. It wraps code at token boundaries without rewriting literal contents. Run both checks in CI:
+
+```sh
+vendor/bin/php-cs-fixer fix --dry-run --diff
+vendor/bin/sm-no-saccade-style src tests
+```
+
+PHP-CS-Fixer has no warning severity. The companion command reports remaining line-length errors and warns about runs of more than 10 nonblank code lines. It suggests semantic separation without inserting blank lines. Comment-only lines and multiline literal contents break a run. Warnings exit successfully; line-length errors exit with status 1 and invalid input exits with status 2.
+
+The command accepts files or directories, recursively scans PHP files, and excludes `vendor` and `node_modules`:
+
+```sh
+vendor/bin/sm-no-saccade-style --max-line-length=100 --max-unseparated-lines=10 --tab-width=4 src
+```
+
+Multiline literals and long literal payloads are exempt by default. Add `--no-ignore-literals` to report their lengths too. For a different formatting limit, set `Fixers::ALLMAN_TABS` to `['max_line_length' => 120]` and pass the same value to the companion command.
+
+Classes, named functions, and methods have a blank line before their declaration, including the first method in a class. Attached PHPDoc and attributes stay with the declaration; the blank line goes before them.
 
 ## Style Guide
 
@@ -433,16 +455,20 @@ $ids = array_map(
 );
 ```
 
-Single-line function, method, and class bodies are allowed to stay compact.
+Compact bodies are allowed only when the complete construct fits on one line within the limit and the language requires its braces. Multiline heads always have multiline bodies. Optional control braces expand to standard blocks, even for an empty body. Existing braces are preserved.
 
 ```php
 <?php
 
 function add(){ return; };
 
-final class NullLogger { public function info(): void { return; } };
+final class Counter { public int $value = 0; }
 
-if($disabled){}
+try{ work(); } catch(Exception $error){ report($error); }
+
+if($disabled)
+{
+}
 ```
 
 Dynamic member access braces stay inline.
@@ -541,6 +567,9 @@ match($mode)
 Avoid trailing spaces and tabs outside strings, keep one final newline at the end of each file, and keep semicolons on the same line as the instruction they terminate.
 
 ## Rules
+
+- `SeanMorris/no_saccade_declaration_spacing`
+  Adds a blank line before declarations, including their PHPDoc and attributes.
 
 - `SeanMorris/no_saccade_leading_comma_lists`
   Moves commas to the left rail for multiline arrays, `array()` and `list()` forms, vertical calls, and destructuring patterns.

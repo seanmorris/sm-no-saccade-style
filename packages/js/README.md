@@ -130,6 +130,31 @@ export default [
 
 The recommended config works for both JavaScript and TypeScript.
 
+## Line length and separation
+
+The recommended preset uses a 100-column limit and four-column tab stops. It wraps code at token boundaries and reports lines that still need attention. Multiline literals and literal payloads too long to fit are exempt by default; their contents are never changed.
+
+A run of more than 10 nonblank code lines produces a warning suggesting semantic separation. The rule does not choose where to insert blank lines. Comment-only lines and multiline literal contents break the run.
+
+Override the limits in flat config:
+
+```js
+export default [
+    ...smNoSaccadeStyle.configs.recommended,
+    {
+        rules: {
+            'sm-no-saccade-style/max-line-length': ['error', { max: 100, tabWidth: 4 }],
+            'sm-no-saccade-style/allman-tabs': ['error', { maxLineLength: 100 }],
+            'sm-no-saccade-style/max-unseparated-lines': ['warn', { max: 10 }],
+        },
+    },
+];
+```
+
+Set `ignoreLiterals: false` on `max-line-length` to report long literal lines too. The formatter still leaves literal contents unchanged.
+
+Classes, functions, and methods have a blank line before their declaration. Attached JSDoc and decorators stay with the declaration; the blank line goes before them. The same applies to the first class method, object methods, and assigned functions. Inline callback expressions stay with their enclosing expression.
+
 ## Style Guide
 
 This section describes how to lay out code so it already matches the formatter and lint rules this package enforces.
@@ -308,14 +333,18 @@ class Scene
 }
 ```
 
-Single-line function, method, and class bodies are allowed to stay compact.
+Compact bodies are allowed only when the complete construct fits on one line within the limit and the language requires its braces. Multiline heads always have multiline bodies. Optional control braces expand to standard blocks, even for an empty body. Existing braces are preserved.
 
 ```js
 function add(){ return; };
 
-class NullLogger { info(){ return; }; };
+class Counter { value = 0; }
 
-if(disabled){}
+try{ work(); } catch(error){ report(error); }
+
+if(disabled)
+{
+}
 ```
 
 ### Delimiter rails
@@ -378,6 +407,13 @@ while(queue.length)
 Avoid trailing spaces and keep one final newline at the end of each file.
 
 ## Rules
+
+- `sm-no-saccade-style/declaration-spacing`
+  Adds a blank line before declarations, including their documentation and decorators.
+- `sm-no-saccade-style/max-line-length`
+  Wraps code at safe token boundaries and reports lines over the configurable 100-column limit.
+- `sm-no-saccade-style/max-unseparated-lines`
+  Warns on more than 10 consecutive code lines without semantic separation. It has no automatic fix.
 
 - `sm-no-saccade-style/leading-comma-lists`
   Moves commas to the left rail for multiline arrays and objects.
