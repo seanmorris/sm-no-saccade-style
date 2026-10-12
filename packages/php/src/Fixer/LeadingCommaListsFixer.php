@@ -21,6 +21,13 @@ final class LeadingCommaListsFixer extends AbstractNoSaccadeFixer
 
 	protected function transform(string $code): string
 	{
-		return SourceTransformer::withLeadingCommaLists($code);
+		for($pass = 0; $pass < 16; $pass++)
+		{
+			$before = $code;
+			$code = SourceTransformer::withLeadingCommaLists($code);
+
+			if($code === $before) break;
+		}
+		return $code;
 	}
 }

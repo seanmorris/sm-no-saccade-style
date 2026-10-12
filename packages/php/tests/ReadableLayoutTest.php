@@ -410,6 +410,16 @@ PHP
 		);
 	}
 
+	public function testWrappingCallsWithGroupedArrayRowsConverges(): void
+	{
+		$this->format(<<<'PHP'
+<?php
+json('loop.tsj', ['type' => 'tileset', 'name' => 'loop', 'tilewidth' => 32, 'tileheight' => 32, 'tilecount' => 64, 'columns' => 8, 'image' => 'loop.png', 'imagewidth' => 256, 'imageheight' => 256, 'tiles' => $loopTiles]);
+
+PHP
+		);
+	}
+
 	private function format(string $input): string
 	{
 		$config = ConfigFactory::recommended([]);
