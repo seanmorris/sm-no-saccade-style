@@ -290,7 +290,7 @@ PHP
 		);
 	}
 
-	public function testAllmanTabsFixerDoesNotSplitNestedCallClosersAfterDeeperContent(): void
+	public function testAllmanTabsFixerSplitsNestedCallClosersOntoTheirOpeningIndent(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
@@ -300,7 +300,8 @@ $response = Http::post(
 	, json_encode([
 		'ksql' => $string
 	]
-));
+	)
+);
 
 PHP
 			, $this->apply(
@@ -319,7 +320,7 @@ PHP
 		);
 	}
 
-	public function testAllmanTabsFixerRejoinsSplitNestedCallClosersAfterListCloser(): void
+	public function testAllmanTabsFixerPreservesNestedCallClosingIndents(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
@@ -329,7 +330,8 @@ $response = Http::post(
 	, json_encode([
 		'ksql' => $string
 	]
-));
+	)
+);
 
 PHP
 			, $this->apply(
@@ -1041,7 +1043,7 @@ PHP
 		$this->assertArrayHasKey('multiline_whitespace_before_semicolons', $config->getRules());
 		$this->assertArrayHasKey('semicolon_after_instruction', $config->getRules());
 		$this->assertArrayHasKey(Fixers::SEPARATOR_SPACING, $config->getRules());
-		$this->assertCount(9, $config->getCustomFixers());
+		$this->assertCount(10, $config->getCustomFixers());
 	}
 
 	public function testCustomFixersExposeMetadata(): void
@@ -1056,6 +1058,7 @@ PHP
 			, Fixers::NO_TRAILING_WHITESPACE
 			, Fixers::DECLARATION_SPACING
 			, Fixers::SEPARATOR_SPACING
+			, Fixers::STATEMENT_SPACING
 		];
 
 		foreach(Fixers::all() as $index => $fixer)

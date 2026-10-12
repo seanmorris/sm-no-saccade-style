@@ -24,16 +24,16 @@ final class FinalCommaLineFixer extends AbstractNoSaccadeFixer implements Config
 
 	public function getConfigurationDefinition(): FixerConfigurationResolverInterface
 	{
-		return new FixerConfigurationResolver([
-			new FixerOption(
+		return new FixerConfigurationResolver(
+			[new FixerOption(
 				'mode'
 				, 'Whether a final comma-only line is allowed, required, or forbidden.'
 				, false
 				, 'allow'
 				, ['string']
 				, ['allow', 'require', 'forbid']
-			)
-		]);
+			)]
+		);
 	}
 
 	protected static function ruleName(): string

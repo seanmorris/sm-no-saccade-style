@@ -1,15 +1,12 @@
-const CONTROL_TYPES = new Set([
-	'CatchClause'
-	, 'DoWhileStatement'
-	, 'ForInStatement'
-	, 'ForOfStatement'
-	, 'ForStatement'
-	, 'IfStatement'
-	, 'SwitchStatement'
-	, 'WhileStatement'
-	, 'WithStatement'
-
-]);
+const CONTROL_TYPES = new Set(
+	['CatchClause'
+		, 'DoWhileStatement'
+		, 'ForInStatement'
+		, 'ForOfStatement'
+		, 'ForStatement'
+		, 'IfStatement', 'SwitchStatement', 'WhileStatement', 'WithStatement'
+	]
+);
 
 function getParenToken(sourceCode, node)
 {
@@ -20,18 +17,27 @@ function getParenToken(sourceCode, node)
 
 	if(node.type === 'CatchClause')
 	{
-		return node.param ? sourceCode.getFirstTokenBetween(sourceCode.getFirstToken(node), node
-			.param, (token) => token.value === '(') : null;
+		return node.param ? sourceCode.getFirstTokenBetween(
+			sourceCode.getFirstToken(node)
+			, node.param
+			, (token) => token.value === '('
+		) : null;
 	}
 
 	if(node.type === 'DoWhileStatement')
 	{
-		return sourceCode.getFirstTokenBetween(node.body, node.test, (token) => token
-			.value === '(');
+		return sourceCode.getFirstTokenBetween(
+			node.body
+			, node.test
+			, (token) => token.value === '('
+		);
 	}
 
-	return sourceCode.getFirstTokenBetween(sourceCode.getFirstToken(node), node.test ?? node
-		.discriminant ?? node.right, (token) => token.value === '(');
+	return sourceCode.getFirstTokenBetween(
+		sourceCode.getFirstToken(node)
+		, node.test ?? node.discriminant ?? node.right
+		, (token) => token.value === '('
+	);
 }
 
 function getKeywordToken(sourceCode, node)

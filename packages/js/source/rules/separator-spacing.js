@@ -19,12 +19,14 @@ export default {
 			}
 
 			const next = sourceCode.getTokenAfter(token, { includeComments: true });
+
 			if(!next || next.value === ')' || token.loc.end.line !== next.loc.start.line)
 			{
 				return;
 			}
 
 			const range = [token.range[1], next.range[0]];
+
 			if(sourceCode.text.slice(...range) === ' ')
 			{
 				return;
@@ -41,10 +43,16 @@ export default {
 		function checkList(node)
 		{
 			const items = node.params ?? node.arguments;
+
 			for(let index = 1; index < items.length; index++)
 			{
-				checkSeparator(sourceCode.getFirstTokenBetween(items[index - 1], items[index]
-					, token => token.value === ','));
+				checkSeparator(
+					sourceCode.getFirstTokenBetween(
+						items[index - 1]
+						, items[index]
+						, token => token.value === ','
+					)
+				);
 			}
 		}
 

@@ -159,6 +159,20 @@ Classes, functions, and methods have a blank line before their declaration. Atta
 
 This section describes how to lay out code so it already matches the formatter and lint rules this package enforces.
 
+### Statement groups and long calls
+
+Keep related assignments together. Insert a blank line before a following control statement, after a conditional, and before a multiline call statement. Leading comments stay with their statements. Directly nested controls and a loop followed by a return stay together.
+
+Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
+
+```js
+entities[object.id] = registry.create(
+	...this.factories[className](object, map)
+);
+```
+
+The separate warning for runs longer than 10 lines still asks for human judgment when no syntactic boundary determines a useful break.
+
 ### Parameters, calls, and loop headers
 
 Use one space after commas in function definitions and calls, and after semicolons in `for` headers. This also covers methods, arrow functions, constructor calls, and TypeScript signatures. Multiline headers keep their line breaks; no trailing spaces are added.
@@ -362,7 +376,7 @@ if(disabled)
 
 ### Delimiter rails
 
-Do not add extra blank lines between adjacent delimiter-only lines.
+Multiline `()`, `{}`, and `[]` close at the indentation level of the line where they opened. Use a separate closing line when needed. Do not add extra blank lines between adjacent delimiter-only lines.
 
 ```js
 const config = {
@@ -421,6 +435,8 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 
 ## Rules
 
+- `sm-no-saccade-style/statement-spacing`
+  Separates control flow and multiline call statements from preceding work, and separates conditionals from following statements. Comments stay attached to their statements; nested control chains and loop-to-return transitions stay together.
 - `sm-no-saccade-style/separator-spacing`
   Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `sm-no-saccade-style/declaration-spacing`

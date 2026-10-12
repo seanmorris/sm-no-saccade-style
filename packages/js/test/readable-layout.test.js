@@ -19,13 +19,15 @@ async function format(input)
 
 	const tokens = code => parse(code, { ecmaVersion: 'latest'
 		, sourceType: 'module'
-		, tokens: true })
+		, tokens: true
+	})
 		.tokens.map(({ type, value }) => [type, value]);
 	assert.deepEqual(tokens(output), tokens(input), 'Layout must preserve every executable token.');
 
 	const ast = code => JSON.parse(JSON.stringify(parse(code, {
 		ecmaVersion: 'latest', sourceType: 'module'
-	}), (key, value) => ['start', 'end', 'loc', 'range', 'raw'].includes(key) ? undefined : value));
+	}), (key, value) => ['start', 'end', 'loc', 'range', 'raw'].includes(key) ? undefined : value
+	));
 	assert.deepEqual(ast(output), ast(input), 'Layout must preserve the parsed program.');
 	return output;
 }
@@ -38,7 +40,9 @@ const create = await format(`class World
 	for(const c of components)
 	{ this.add(id,c); } return id; }
 }
-`);
+`
+);
+
 assert.equal(create, `class World
 {
 
@@ -46,6 +50,7 @@ assert.equal(create, `class World
 	{
 		const id = this.next++;
 		this.entities[id] = [];
+
 		for(const c of components)
 		{
 			this.add(id, c);
@@ -53,7 +58,8 @@ assert.equal(create, `class World
 		return id;
 	}
 }
-`);
+`
+);
 
 const nested = await format(`for(const item of items)
 { if(item.enabled)
@@ -63,13 +69,17 @@ const nested = await format(`for(const item of items)
 	{ remove(entry); if(empty(entry)) { clear(entry); } }
 	emit(item);
 } }
-`);
+`
+);
 assert.match(nested, /for\(const item of items\)\n\{\n\tif\(item.enabled\)\n\t\{/u);
 assert.doesNotMatch(nested, /\{ (?:if|for|remove)|; \}|\} \}/u);
 
 assert.equal(await format('if(ready){ run(); }\n'), 'if(ready)\n{\n\trun();\n}\n');
-assert.equal(await format('try{ run(); } catch(error){ fail(error); }\n'),
-	'try{ run(); } catch(error){ fail(error); }\n');
+
+assert.equal(
+	await format('try{ run(); } catch(error){ fail(error); }\n')
+	, 'try{ run(); } catch(error){ fail(error); }\n'
+);
 assert.equal(await format('function short(){ return 1; }\n'), 'function short(){ return 1; }\n');
 
 const documented = await format(`const value = 1;
@@ -79,7 +89,8 @@ class Worker {
 /** Describes the method. */
 run() { return value; }
 }
-`);
+`
+);
 assert.match(documented, /value = 1;\n\n\/\*\*/u);
 assert.match(documented, /\*\/\nexport async function/u);
 assert.match(documented, /\n\nclass Worker/u);
@@ -105,15 +116,18 @@ await format('const text = `line one\n  line two`;\nif(ready){ /* keep */ use(te
 
 const checking = new ESLint({ overrideConfigFile: true
 	, overrideConfig: plugin.configs
-	.recommended });
+	.recommended
+});
 const [run] = await checking.lintText('work();\n'.repeat(11), { filePath: 'runs.js' });
 assert.equal(run.warningCount, 1);
 assert.equal(run.messages[0].ruleId, 'sm-no-saccade-style/max-unseparated-lines');
 assert.match(run.messages[0].message, /semantic/iu);
 const [ten] = await checking.lintText('work();\n'.repeat(10), { filePath: 'runs.js' });
 assert.equal(ten.warningCount, 0);
+
 const [split] = await checking.lintText('work();\n'.repeat(6) + '\n' + 'work();\n'.repeat(6),
-	{ filePath: 'runs.js' });
+	{ filePath: 'runs.js' }
+);
 assert.equal(split.warningCount, 0);
 const [wide] = await checking.lintText('call(' + 'a'.repeat(95) + ');\n', { filePath: 'wide.js' });
 assert.ok(wide.messages.some(message => message.ruleId === 'sm-no-saccade-style/max-line-length'));
@@ -125,7 +139,8 @@ const object = await format(`const config = {
 	create() { return 1; },
 	other() { return 2; }
 };
-`);
+`
+);
 assert.equal((object.match(/schema/gu) ?? []).length, 1);
 assert.match(object, /\n\n\t, other/u);
 
@@ -142,10 +157,13 @@ assert.match(ts.output, /value: number = 1;\n\n\/\*\*/u);
 assert.match(ts.output, /\{\n\n\t@method\n\trun/u);
 
 const [docsOnly] = await checking.lintText('/*\n' + 'comment\n'.repeat(15) + '*/\n', {filePath:
-	'docs.js'});
+	'docs.js'
+});
 assert.equal(docsOnly.warningCount, 0);
+
 const [literal] = await checking.lintText('const text = `\n' + 'literal\n'.repeat(15) + '`;\n'
-	, {filePath: 'literal.js'});
+	, {filePath: 'literal.js'}
+);
 assert.equal(literal.warningCount, 0);
 
 const warningsInput = 'work();\n'.repeat(11);
@@ -162,7 +180,8 @@ worker.run?.(1,/* keep the argument comment */2);
 combine((first),(second));
 combine('literal,;','unchanged');
 combine(first,   second);
-`);
+`
+);
 assert.match(separators, /combine\(first, second = pick\(1, 2\), \.\.\.rest\)/u);
 assert.match(separators, /run\(first, second\)/u);
 assert.match(separators, /\(first, second\) => combine\(first, second\)/u);
@@ -182,7 +201,8 @@ i < 3;
 i++
 ){ use(i); }
 for(let i = 0;/* keep the loop comment */i < 3;i++){ use(i); }
-`);
+`
+);
 assert.match(loops, /for\(let i = 0; i < 3; i\+\+\)/u);
 assert.match(loops, /for\(; ;\)/u);
 assert.match(loops, /for\(; ready;\)/u);
@@ -195,7 +215,8 @@ const leadingArguments = `function combine(
 	, second
 ){
 	return run(first
-		, second);
+		, second
+	);
 }
 `;
 assert.equal(await format(leadingArguments), leadingArguments);
@@ -218,3 +239,96 @@ const [indentedLiteral] = await checking.lintText(`'${'x'.repeat(101)}';\n`, {
 	filePath: 'literal.js'
 });
 assert.equal(indentedLiteral.errorCount, 0);
+
+const spawning = `class Spawner
+{
+
+	spawn(map, registry)
+	{
+		const entities = [];
+		for(const layer of map.layers)
+		{
+			for(const object of layer.objects)
+			{
+				const className = object.class ?? object.type ?? '';
+				if(!(this.factories[className]))
+				{
+					continue;
+				}
+				object.x = (object.x ?? 0) + map.x + layer.offsetX;
+				object.y = (object.y ?? 0) + map.y + layer.offsetY;
+				object.properties = Loader.properties(object.properties ?? []);
+				entities[object['id']] = registry.create(...(this.factories[className])(object
+					, map));
+			}
+		}
+		return entities;
+	}
+}
+`;
+
+const spawnExpected = spawning
+	.replace('const entities = [];\n', 'const entities = [];\n\n')
+	.replace(
+		"const className = object.class ?? object.type ?? '';\n"
+		, "const className = object.class ?? object.type ?? '';\n\n"
+	)
+	.replace('\t\t\t\t}\n\t\t\t\tobject.x', '\t\t\t\t}\n\n\t\t\t\tobject.x')
+	.replace(`\t\t\t\tentities[object['id']] = registry.create(...(this.factories[className])(object
+					, map));`, `
+				entities[object['id']] = registry.create(
+					...(this.factories[className])(object, map)
+				);`
+	);
+assert.equal(await format(spawning), spawnExpected);
+
+assert.equal(await format(`const result = outer(
+	inner(
+		[
+			true]));
+`
+), `const result = outer(
+	inner(
+		[
+			true
+		]
+	)
+);
+`
+);
+
+const grouped = await format(`function work(items)
+{
+	const results = [];
+	// Filter each item.
+	for(const item of items)
+	{
+		const ready = item !== null;
+		/** Keep this with the guard. */
+		if(!ready)
+		{
+			continue;
+		}
+		else if(item === false)
+		{
+			throw new Error('literal },);');
+		}
+		// Keep processing details.
+		results.push(item);
+	}
+	return results;
+}
+`
+);
+assert.match(grouped, /results = \[\];\n\n\t\/\/ Filter/u);
+assert.match(grouped, /ready = item !== null;\n\n\t\t\/\*\* Keep/u);
+assert.match(grouped, /\}\n\t\telse if/u);
+assert.match(grouped, /\}\n\n\t\t\/\/ Keep processing/u);
+assert.match(grouped, /\t\}\n\treturn results;/u);
+await format('const result = outer(\n\tinner(\n\t\t[true] // keep\n\t));\n');
+
+const constructed = await format(
+	'const someLongResultName = new ExampleFactory(transform(firstLongParameterName, secondLongParameterName));\n'
+);
+assert.match(constructed, /new ExampleFactory\(\n\ttransform\(/u);
+assert.match(constructed, /secondLongParameterName\)\n\);/u);

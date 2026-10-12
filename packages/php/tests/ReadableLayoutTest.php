@@ -27,7 +27,9 @@ class World
 	{ $this->add($id,$c); } return $id; }
 }
 
-PHP);
+PHP
+		);
+
 		self::assertSame(<<<'PHP'
 <?php
 
@@ -38,6 +40,7 @@ class World
 	{
 		$id = $this->next++;
 		$this->entities[$id] = [];
+
 		foreach($components as $c)
 		{
 			$this->add($id, $c);
@@ -46,7 +49,8 @@ class World
 	}
 }
 
-PHP, $output);
+PHP, $output
+		);
 	}
 
 	public function testNestedControlRegression(): void
@@ -64,7 +68,8 @@ foreach($this->entities[$id] as $class => $component)
 	$this->emit('removed',$id,$component);
 } }
 
-PHP);
+PHP
+		);
 		self::assertStringContainsString("\n{\n\tif(\$component instanceof \$type)\n\t{", $output);
 		self::assertStringNotContainsString('{ unset', $output);
 		self::assertStringNotContainsString('} }', $output);
@@ -72,10 +77,15 @@ PHP);
 
 	public function testOptionalBracesExpandAndMandatoryShortBodiesRemain(): void
 	{
-		self::assertSame("<?php\nif(\$ready)\n{\n\trun();\n}\n",
-			$this->format("<?php\nif(\$ready){ run(); }\n"));
-		self::assertSame("<?php\ntry{ run(); } catch(\\Exception \$e){ fail(); }\n",
-			$this->format("<?php\ntry{ run(); } catch(\\Exception \$e){ fail(); }\n"));
+		self::assertSame(
+			"<?php\nif(\$ready)\n{\n\trun();\n}\n"
+			, $this->format("<?php\nif(\$ready){ run(); }\n")
+		);
+
+		self::assertSame(
+			"<?php\ntry{ run(); } catch(\\Exception \$e){ fail(); }\n"
+			, $this->format("<?php\ntry{ run(); } catch(\\Exception \$e){ fail(); }\n")
+		);
 	}
 
 	public function testLongAndMultilineHeadsExpand(): void
@@ -102,9 +112,13 @@ public function run() { return 1; }
 public function next() { return 2; }
 }
 
-PHP);
-		self::assertStringContainsString("\$value = 1;\n\n/** Describes the class. */\n#[Example]"
-			, $output);
+PHP
+		);
+
+		self::assertStringContainsString(
+			"\$value = 1;\n\n/** Describes the class. */\n#[Example]"
+			, $output
+		);
 		self::assertStringContainsString("{\n\n\t/** Describes the method. */", $output);
 		self::assertStringContainsString("\n\n\tpublic function next()", $output);
 	}
@@ -125,6 +139,7 @@ PHP);
 	{
 		$output = $this->format("<?php\ntry{ run(); }\ncatch(\\Exception \$e){ fail(); }\n");
 		self::assertStringContainsString("catch(\\Exception \$e)\n{\n\tfail();\n}", $output);
+
 		$this->format(<<<'PHP'
 <?php
 $value = "Hello {$user->name}";
@@ -135,7 +150,8 @@ TEXT;
 if($value){ /* keep this */ echo $object->{'name'}; }
 for($i = 0; $i < 10; $i++){ if($i){ work(); } }
 
-PHP);
+PHP
+		);
 	}
 
 	public function testGroupedRowsDoNotDuplicateTheirPrefix(): void
@@ -147,7 +163,8 @@ $config = [
         'additionalProperties' => false]
 ];
 
-PHP);
+PHP
+		);
 		self::assertSame(1, substr_count($output, "'schema'"));
 	}
 
@@ -161,7 +178,8 @@ $callback = static fn($item) => $item;
 /** Keeps the assigned closure's documentation. */
 $callback = static function($item) { return $item; };
 
-PHP);
+PHP
+		);
 	}
 
 	public function testDiagnosticUnicodeTabsAndProtectedText(): void
@@ -171,10 +189,18 @@ PHP);
 		$literal = "<?php\n\$text = '" . str_repeat('x', 150) . "';\n";
 		self::assertSame([], Diagnostics::analyze($literal));
 		self::assertNotEmpty(Diagnostics::analyze($literal, ignoreLiterals: false));
-		self::assertSame([], Diagnostics::analyze("<?php\n/*\n" . str_repeat("comment\n", 15)
-			. "*/\n"));
-		self::assertSame([], Diagnostics::analyze("<?php\n" . str_repeat("work();\n", 6)
-			. "\n" . str_repeat("work();\n", 6)));
+
+		self::assertSame(
+			[]
+			, Diagnostics::analyze("<?php\n/*\n" . str_repeat("comment\n", 15) . "*/\n")
+		);
+
+		self::assertSame(
+			[]
+			, Diagnostics::analyze(
+				"<?php\n" . str_repeat("work();\n", 6) . "\n" . str_repeat("work();\n", 6)
+			)
+		);
 	}
 
 	public function testWarningCliSucceedsWithoutRewriting(): void
@@ -182,17 +208,22 @@ PHP);
 		$file = tempnam(sys_get_temp_dir(), 'saccade-');
 		$code = "<?php\n" . str_repeat("work();\n", 11);
 		file_put_contents($file, $code);
+
 		try
 		{
-			$command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__
-				. '/../bin/sm-no-saccade-style')
+			$command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(
+				__DIR__ . '/../bin/sm-no-saccade-style'
+			)
 				. ' ' . escapeshellarg($file);
 			exec($command, $output, $status);
 			self::assertSame(0, $status);
 			self::assertCount(1, $output);
 			self::assertStringStartsWith($file . ':2: warning ', $output[0]);
-			self::assertStringContainsString('warning [max-unseparated-lines]', implode("\n"
-				, $output));
+
+			self::assertStringContainsString(
+				'warning [max-unseparated-lines]'
+				, implode("\n", $output)
+			);
 			self::assertSame($code, file_get_contents($file));
 			file_put_contents($file, "<?php\ncall(" . str_repeat('a', 94) . ");\n");
 			$output = [];
@@ -222,11 +253,15 @@ Worker::run(first: 1,second: combine(2,3));
 combine('literal,;','unchanged');
 combine($first,   $second);
 
-PHP);
+PHP
+		);
 		self::assertStringContainsString('combine($first, $second = 2, ...$rest)', $output);
 		self::assertStringContainsString('run($first, $second)', $output);
-		self::assertStringContainsString('fn($first, $second) => combine($first, $second)'
-			, $output);
+
+		self::assertStringContainsString(
+			'fn($first, $second) => combine($first, $second)'
+			, $output
+		);
 		self::assertStringContainsString('use ($left, $right)', $output);
 		self::assertStringContainsString('new Worker(1, 2)', $output);
 		self::assertStringContainsString('run(1, /* keep the argument comment */2)', $output);
@@ -258,7 +293,8 @@ $i++
 ){ useValue($i); }
 for($i = 0;/* keep the loop comment */$i < 3;$i++){ useValue($i); }
 
-PHP);
+PHP
+		);
 		self::assertStringContainsString('for($i = 0; $i < 3; $i++)', $output);
 		self::assertStringContainsString('for(; ;)', $output);
 		self::assertStringContainsString('for(; $ready;)', $output);
@@ -277,24 +313,120 @@ function combine(
 	, $second
 ){
 	return run($first
-		, $second);
+		, $second
+	);
 }
 
 PHP;
 		self::assertSame($input, $this->format($input));
 	}
 
+	public function testObjectSpawnerUsesStatementGroupsAndCompleteArguments(): void
+	{
+		$input = file_get_contents(__DIR__ . '/fixtures/spawn.before.txt');
+		$expected = file_get_contents(__DIR__ . '/fixtures/spawn.after.txt');
+		self::assertSame($expected, $this->format($input));
+	}
+
+	public function testNestedClosersReturnToTheirOwnOpeningIndent(): void
+	{
+		$input = <<<'PHP'
+<?php
+$result = outer(
+	inner(
+		[
+			'value' => true]));
+
+PHP;
+		$expected = <<<'PHP'
+<?php
+$result = outer(
+	inner(
+		[
+			'value' => true
+		]
+	)
+);
+
+PHP;
+		self::assertSame($expected, $this->format($input));
+	}
+
+	public function testStatementGroupsPreserveCommentsBranchesAndLoopReturn(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+function work($items)
+{
+	$results = [];
+	// Filter each item.
+	foreach($items as $item)
+	{
+		$ready = $item !== null;
+		/** Keep this with the guard. */
+		if(!$ready)
+		{
+			continue;
+		}
+		elseif($item === false)
+		{
+			throw new \Exception('literal },);');
+		}
+		// Keep processing details.
+		$results[] = $item;
+	}
+	return $results;
+}
+
+PHP
+		);
+		self::assertStringContainsString("\$results = [];\n\n\t// Filter", $output);
+		self::assertStringContainsString("\$ready = \$item !== null;\n\n\t\t/** Keep", $output);
+		self::assertStringContainsString("}\n\t\telseif", $output);
+		self::assertStringContainsString("}\n\n\t\t// Keep processing", $output);
+		self::assertStringContainsString("\t}\n\treturn \$results;", $output);
+		$this->format("<?php\n\$result = outer(\n\tinner(\n\t\t['value' => true] // keep\n\t));\n");
+	}
+
+	public function testCallWrappingHandlesConstructorsAndNamedArguments(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$someLongResultName = new ExampleFactory(argument: transform($firstLongParameterName, $secondLongParameterName));
+
+PHP
+		);
+		self::assertStringContainsString("new ExampleFactory(\n\targument: transform(", $output);
+		self::assertStringContainsString("\$secondLongParameterName)\n);", $output);
+	}
+
+	public function testNestedCallWrappingConvergesWithinOneFormattingRun(): void
+	{
+		$this->format(<<<'PHP'
+<?php
+$tokens = static fn(string $code): array => array_values(array_map(static fn(\PhpToken $token): array => [$token->id, $token->text], array_filter(\PhpToken::tokenize($code, TOKEN_PARSE), static fn(\PhpToken $token): bool => $token->id !== T_WHITESPACE)));
+
+PHP
+		);
+	}
+
 	private function format(string $input): string
 	{
 		$config = ConfigFactory::recommended([]);
+
 		$factory = (new FixerFactory())->registerBuiltInFixers()
 			->registerCustomFixers($config->getCustomFixers())
-			->setWhitespacesConfig(new \PhpCsFixer\WhitespacesFixerConfig($config->getIndent()
-				, $config->getLineEnding()))
+			->setWhitespacesConfig(
+				new \PhpCsFixer\WhitespacesFixerConfig(
+					$config->getIndent()
+					, $config->getLineEnding()
+				)
+			)
 			->useRuleSet(new RuleSet($config->getRules()));
 
 		$apply = static function(string $code) use ($factory): string {
 			$tokens = Tokens::fromCode($code);
+
 			foreach($factory->getFixers() as $fixer)
 			{
 				$fixer->fix(new \SplFileInfo(__FILE__), $tokens);
@@ -304,13 +436,21 @@ PHP;
 		$output = $apply($input);
 		self::assertSame($output, $apply($output), 'Formatting must be idempotent.');
 
-		$tokens = static fn(string $code): array => array_values(array_map(
-			static fn(\PhpToken $token): array => [$token->id, $token->text]
-			, array_filter(\PhpToken::tokenize($code, TOKEN_PARSE),
-				static fn(\PhpToken $token): bool => $token->id !== T_WHITESPACE)
-		));
-		self::assertSame($tokens($input), $tokens($output)
-			, 'Executable tokens and comments must survive.');
+		$tokens = static fn(string $code): array => array_values(
+			array_map(
+				static fn(\PhpToken $token): array => [$token->id, $token->text]
+				, array_filter(
+					\PhpToken::tokenize($code, TOKEN_PARSE)
+					, static fn(\PhpToken $token): bool => $token->id !== T_WHITESPACE
+				)
+			)
+		);
+
+		self::assertSame(
+			$tokens($input)
+			, $tokens($output)
+			, 'Executable tokens and comments must survive.'
+		);
 		return $output;
 	}
 }

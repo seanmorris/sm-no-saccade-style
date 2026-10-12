@@ -54,31 +54,48 @@ final class SourceTransformer
 
 	public static function withAllmanTabs(string $code, int $maxLineLength = 100): string
 	{
-		$code = self::withDynamicMemberBraceSpacing($code);
-		$code = self::withBlockLayout($code, $maxLineLength);
-		$code = self::withLineLength($code, $maxLineLength);
-		$code = self::withBlockLayout($code, $maxLineLength);
-		$code = self::withAllmanBraces($code, $maxLineLength);
-		$code = self::withTabIndentation($code);
-		$indentation = new \PhpCsFixer\Fixer\Whitespace\StatementIndentationFixer();
-		$indentation->setWhitespacesConfig(new \PhpCsFixer\WhitespacesFixerConfig("\t", "\n"));
-		$tokens = \PhpCsFixer\Tokenizer\Tokens::fromCode($code);
-		$indentation->fix(new \SplFileInfo(__FILE__), $tokens);
-		$code = $tokens->generateCode();
-		$code = self::withClassPropertyAlignment($code);
-		$code = self::withClosingRails($code);
+		// Expanding an outer call can expose a nested call that now needs its own layout.
+		for($pass = 0; $pass < 16; $pass++)
+		{
+			$before = $code;
+			$code = self::withDynamicMemberBraceSpacing($code);
+			$code = self::withBlockLayout($code, $maxLineLength);
+			$code = self::withLineLength($code, $maxLineLength);
+			$code = self::withBlockLayout($code, $maxLineLength);
+			$code = self::withAllmanBraces($code, $maxLineLength);
+			$code = self::withTabIndentation($code);
+			$indentation = new \PhpCsFixer\Fixer\Whitespace\StatementIndentationFixer();
+			$indentation->setWhitespacesConfig(new \PhpCsFixer\WhitespacesFixerConfig("\t", "\n"));
+			$tokens = \PhpCsFixer\Tokenizer\Tokens::fromCode($code);
+			$indentation->fix(new \SplFileInfo(__FILE__), $tokens);
+			$code = $tokens->generateCode();
+			$code = self::withClassPropertyAlignment($code);
+			$code = self::withClosingRails($code);
 
-		return self::withNestedCallCloserCompaction($code);
+
+			if($code === $before) break;
+		}
+		return $code;
 	}
 
 	private static function withLineLength(string $code, int $maxLineLength): string
 	{
 		$tokens = self::tokens($code);
+
+		$code = ReadableLayout::wrapCalls(
+			$code
+			, $tokens
+			, self::closingRailPairs($tokens)
+			, $maxLineLength
+		);
+		$tokens = self::tokens($code);
 		$interpolated = self::interpolationTokenMap($tokens);
 		$byLine = [];
+
 		foreach($tokens as $index => $token)
 		{
 			if(isset($interpolated[$index])) continue;
+
 			if(in_array($token->text, [',', '&&', '||', '??', '.', '->', '?->'], true))
 			{
 				$byLine[$token->line][] = [$token->pos, $token->pos];
@@ -86,6 +103,7 @@ final class SourceTransformer
 			elseif(in_array($token->text, ['(', '[', '=', '=>', ';', ':'], true))
 			{
 				$next = $tokens[$index + 1] ?? null;
+
 				if($next !== null && !in_array($next->text, [')', ']'], true))
 				{
 					$end = self::tokenEnd($token);
@@ -94,29 +112,45 @@ final class SourceTransformer
 			}
 		}
 		$replacements = [];
+
 		foreach($byLine as $line => $candidates)
 		{
 			$text = self::lineText($code, $line);
+
 			if(\SeanMorris\NoSaccadeStyle\Diagnostics::columns($text) <= $maxLineLength) continue;
+
 			$start = self::lineStartOffset($code, $line);
 			$end = $start + strlen($text);
 			$indent = self::lineIndent($code, $line) . "\t";
 			$prefix = '';
-			while(\SeanMorris\NoSaccadeStyle\Diagnostics::columns($prefix . substr($code, $start
-				, $end - $start)) > $maxLineLength){
+
+			while(\SeanMorris\NoSaccadeStyle\Diagnostics::columns(
+				$prefix . substr($code, $start, $end - $start)
+			) > $maxLineLength
+			){
 				$chosen = null;
+
 				foreach($candidates as [$position])
 				{
-					if($position <= $start || trim(substr($code, $start
-						, $position - $start)) === '') continue;
-					$width = \SeanMorris\NoSaccadeStyle\Diagnostics::columns($prefix . substr($code
-						, $start, $position - $start));
+					if($position <= $start || trim(
+						substr($code, $start, $position - $start)
+					) === ''
+					) continue;
+
+					$width = \SeanMorris\NoSaccadeStyle\Diagnostics::columns(
+						$prefix . substr($code, $start, $position - $start)
+					);
+
 					if($width <= $maxLineLength) $chosen = $position;
 				}
+
 				if($chosen === null) break;
+
 				$left = $chosen;
 				$right = $chosen;
+
 				while($left > $start && str_contains(" \t", $code[$left - 1])) $left--;
+
 				while($right < $end && str_contains(" \t", $code[$right])) $right++;
 				$replacements[] = [$left, $right, "\n" . $indent];
 				$prefix = $indent;
@@ -136,6 +170,7 @@ final class SourceTransformer
 		foreach($tokens as $index => $token)
 		{
 			if(isset($protected[$index])) continue;
+
 			if(isset(self::OPENING_DELIMITERS[$token->text]) || $token->id === T_ATTRIBUTE)
 			{
 				$previous = self::previousSignificant($tokens, $index);
@@ -145,6 +180,7 @@ final class SourceTransformer
 				];
 				continue;
 			}
+
 			if(isset(self::CLOSING_DELIMITERS[$token->text]))
 			{
 				array_pop($stack);
@@ -152,15 +188,21 @@ final class SourceTransformer
 			}
 
 			$parent = end($stack);
+
 			if($parent === false || $parent[0] !== '(') continue;
+
 			if($token->text !== ',' && !($token->text === ';' && $parent[1])) continue;
+
 			$next = $index + 1;
+
 			while(isset($tokens[$next]) && $tokens[$next]->id === T_WHITESPACE) $next++;
+
 			if(!isset($tokens[$next]) || $tokens[$next]->text === ')') continue;
 
 			$start = self::tokenEnd($token);
 			$end = $tokens[$next]->pos;
 			$gap = substr($code, $start, $end - $start);
+
 			if($gap !== ' ' && !str_contains($gap, "\n") && !str_contains($gap, "\r"))
 			{
 				$replacements[] = [$start, $end, ' '];
@@ -176,60 +218,86 @@ final class SourceTransformer
 		$replacements = [];
 		$declarations = [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_FN];
 		$modifiers = [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_FINAL, T_ABSTRACT, T_READONLY];
+
 		foreach($tokens as $index => $token)
 		{
 			if(!in_array($token->id, $declarations, true)) continue;
+
 			$previous = self::previousSignificant($tokens, $index);
-			if($previous !== null && in_array($tokens[$previous]->id, [T_NEW, T_DOUBLE_COLON, T_USE]
-				, true)) continue;
+
+			if($previous !== null && in_array(
+				$tokens[$previous]->id
+				, [T_NEW, T_DOUBLE_COLON, T_USE]
+				, true
+			)) continue;
+
 			$anchor = $index;
+
 			if($token->id === T_FUNCTION || $token->id === T_FN)
 			{
 				$next = self::nextSignificant($tokens, $index);
+
 				if($next !== null && $tokens[$next]->text === '&')
 				{
 					$next = self::nextSignificant($tokens, $next);
 				}
+
 				if($next === null) continue;
+
 				if($tokens[$next]->text === '(')
 				{
 					$assignment = self::previousSignificant($tokens, $index);
+
 					if($assignment !== null && $tokens[$assignment]->id === T_STATIC)
 					{
 						$assignment = self::previousSignificant($tokens, $assignment);
 					}
+
 					if($assignment === null || $tokens[$assignment]->text !== '=') continue;
+
 					$variable = self::previousSignificant($tokens, $assignment);
+
 					if($variable === null || $tokens[$variable]->id !== T_VARIABLE) continue;
+
 					$anchor = $variable;
 				}
 			}
+
 			$start = $anchor;
 			$cursor = $anchor - 1;
+
 			while($cursor >= 0)
 			{
 				$current = $tokens[$cursor];
+
 				if($current->id === T_WHITESPACE)
 				{
 					$cursor--;
 					continue;
 				}
+
 				if($current->id === T_DOC_COMMENT || in_array($current->id, $modifiers, true))
 				{
 					$start = $cursor--;
 					continue;
 				}
+
 				if($current->text === ']')
 				{
 					$depth = 1;
 					$attribute = $cursor - 1;
+
 					for(; $attribute >= 0; $attribute--)
 					{
 						$text = $tokens[$attribute]->text;
+
 						if($text === ']') $depth++;
+
 						if(($text === '[' || $tokens[$attribute]->id === T_ATTRIBUTE)
-							&& --$depth === 0) break;
+							&& --$depth === 0
+						) break;
 					}
+
 					if($attribute >= 0 && $tokens[$attribute]->id === T_ATTRIBUTE)
 					{
 						$start = $attribute;
@@ -237,18 +305,24 @@ final class SourceTransformer
 						continue;
 					}
 				}
+
 				break;
 			}
+
 			if($cursor < 0) continue;
+
 			$left = $tokens[$cursor];
 			$first = $tokens[$start];
 			$between = substr($code, self::tokenEnd($left), $first->pos - self::tokenEnd($left));
 			$newlines = $left->id === T_OPEN_TAG ? 1 : 2;
+
 			if(substr_count($between, "\n") >= $newlines) continue;
+
 			$indent = self::lineIndent($code, $first->line);
 			$replacements[] = [self::tokenEnd($left), $first->pos
 			, str_repeat("\n", $newlines)
-				. $indent];
+				. $indent
+			];
 		}
 		return self::applyReplacements($code, $replacements);
 	}
@@ -257,61 +331,99 @@ final class SourceTransformer
 	{
 		$pairs = self::closingRailPairs($tokens);
 		$compact = [];
+
 		foreach($pairs as $close => $open)
 		{
 			if($tokens[$open]->text !== '{') continue;
+
 			$head = $open - 1;
 			$mandatory = false;
+
 			while($head >= 0)
 			{
 				$token = $tokens[$head];
-				if(in_array($token->id, [T_FUNCTION
-				, T_CLASS
-				, T_INTERFACE
-				, T_TRAIT
-				, T_ENUM
-				, T_TRY
-					, T_CATCH, T_FINALLY, T_SWITCH, T_MATCH], true)){
+
+				if(in_array(
+					$token->id
+					, [T_FUNCTION
+					, T_CLASS
+					, T_INTERFACE
+					, T_TRAIT
+					, T_ENUM
+					, T_TRY
+					, T_CATCH
+					, T_FINALLY
+						, T_SWITCH, T_MATCH
+					]
+					, true
+				)){
 					$mandatory = true;
 					break;
 				}
-				if(in_array($token->id, [T_IF, T_ELSEIF, T_ELSE, T_FOR, T_FOREACH, T_WHILE, T_DO]
-					, true)
-					|| in_array($token->text, [';', '{', '}'], true)) break;
+
+				if(in_array(
+					$token->id
+					, [T_IF, T_ELSEIF, T_ELSE, T_FOR, T_FOREACH, T_WHILE, T_DO]
+					, true
+				)
+					|| in_array($token->text, [';', '{', '}'], true)
+				) break;
+
 				$head--;
 			}
+
 			if(!$mandatory) continue;
+
 			while(in_array($tokens[$head]->id, [T_CATCH, T_FINALLY], true))
 			{
 				$priorClose = self::previousSignificant($tokens, $head);
 				$priorOpen = $pairs[$priorClose] ?? null;
+
 				if($priorOpen === null) break;
+
 				$head = $priorOpen - 1;
-				while($head > 0 && !in_array($tokens[$head]->id, [T_TRY, T_CATCH, T_FINALLY]
-					, true)) $head--;
+
+				while($head > 0 && !in_array(
+					$tokens[$head]->id
+					, [T_TRY, T_CATCH, T_FINALLY]
+					, true
+				)) $head--;
 			}
+
 			if($tokens[$head]->line !== $tokens[$close]->line) continue;
-			if(\SeanMorris\NoSaccadeStyle\Diagnostics::columns(self::lineText($code, $tokens[$head]
-				->line)) > $maxLineLength) continue;
+
+			if(\SeanMorris\NoSaccadeStyle\Diagnostics::columns(
+				self::lineText($code, $tokens[$head]->line)
+			) > $maxLineLength
+			) continue;
+
 			// A try body is compact only when its complete catch/finally chain is on the same line.
 			if(in_array($tokens[$head]->id, [T_TRY, T_CATCH, T_FINALLY], true))
 			{
 				$line = $tokens[$head]->line;
 				$cursor = self::nextSignificant($tokens, $close);
 				$allOnLine = true;
-				while($cursor !== null && in_array($tokens[$cursor]->id, [T_CATCH, T_FINALLY]
-					, true)){
+
+				while($cursor !== null && in_array(
+					$tokens[$cursor]->id
+					, [T_CATCH, T_FINALLY]
+					, true
+				)){
 					while(isset($tokens[$cursor]) && $tokens[$cursor]->text !== '{') $cursor++;
 					$end = array_search($cursor, $pairs, true);
+
 					if($end === false || $tokens[$end]->line !== $line)
 					{
 						$allOnLine = false;
 						break;
 					}
+
 					$cursor = self::nextSignificant($tokens, $end);
 				}
+
 				if(!$allOnLine) continue;
 			}
+
 			$compact[$open] = $close;
 		}
 		return $compact;
@@ -328,57 +440,82 @@ final class SourceTransformer
 		$stack = [];
 
 		$separate = static function(int $left, int $right) use ($code, $tokens
-			, &$replacements): void {
+			, &$replacements
+		): void {
 			$start = self::tokenEnd($tokens[$left]);
 			$end = $tokens[$right]->pos;
 			$gap = substr($code, $start, $end - $start);
+
 			if(trim($gap) === '' && !str_contains($gap, "\n")) $replacements[$start] = [$start
 			, $end
-				, "\n"];
+				, "\n"
+			];
 		};
 		$visible = [];
+
 		foreach($tokens as $index => $token)
 		{
 			if($token->id !== T_WHITESPACE) $visible[] = $index;
 		}
+
 		foreach($visible as $position => $index)
 		{
 			$token = $tokens[$index];
+
 			if(isset($protected[$index])) continue;
+
 			$previous = $visible[$position - 1] ?? null;
 			$next = $visible[$position + 1] ?? null;
+
 			if(isset($opens[$index]))
 			{
 				$stack[] = $index;
+
 				if($token->text === '{' && !isset($compact[$index]) && $next !== null) $separate(
-					$index, $next);
+					$index
+					, $next
+				);
+
 				continue;
 			}
+
 			if(isset($pairs[$index]))
 			{
 				$open = $pairs[$index];
 				array_pop($stack);
+
 				if($token->text === '}' && !isset($compact[$open]) && $previous !== null) $separate(
-					$previous, $index);
+					$previous
+					, $index
+				);
+
 				if($token->text === '}' && !isset($compact[end($stack)]) && $next !== null
-					&& !in_array($tokens[$next]->text, [';'
-					, ','
-					, ')'
-					, ']'
-					, '}'
-					, '('
-					, '->'
-					, '?->'
-						, '::'], true)
-					&& !in_array($tokens[$next]->id, [T_ELSE, T_ELSEIF, T_CATCH, T_FINALLY, T_WHILE]
-						, true)) $separate($index, $next);
+					&& !in_array(
+						$tokens[$next]->text
+						, [';', ',', ')', ']', '}', '(', '->', '?->', '::']
+						, true
+					)
+					&& !in_array(
+						$tokens[$next]->id
+						, [T_ELSE, T_ELSEIF, T_CATCH, T_FINALLY, T_WHILE]
+						, true
+					)
+				) $separate($index, $next);
+
 				continue;
 			}
+
 			$parent = end($stack);
+
 			if($token->text === ';' && $next !== null && ($parent === false || $tokens[$parent]
-				->text === '{')
-				&& !isset($compact[$parent]) && !in_array($tokens[$next]->id, [T_COMMENT
-					, T_DOC_COMMENT, T_CLOSE_TAG], true)) $separate($index, $next);
+				->text === '{'
+			)
+				&& !isset($compact[$parent]) && !in_array(
+					$tokens[$next]->id
+					, [T_COMMENT, T_DOC_COMMENT, T_CLOSE_TAG]
+					, true
+				)
+			) $separate($index, $next);
 		}
 		return self::applyReplacements($code, array_values($replacements));
 	}
@@ -415,8 +552,10 @@ final class SourceTransformer
 
 				if($mode === 'forbid')
 				{
-					if($commaOwnLine && trim(self::lineText($code, self::tokenLine(
-						$comma))) === ','){
+					if($commaOwnLine && trim(
+						self::lineText($code, self::tokenLine($comma))
+					) === ','
+					){
 						[$lineStart, $lineEnd] = self::lineRange($code, self::tokenLine($comma));
 						$replacements[] = [$lineStart, $lineEnd, ''];
 					}
@@ -430,8 +569,10 @@ final class SourceTransformer
 
 				if(!$commaOwnLine && !self::hasCommentBetween($tokens, $finalComma, $span['close']))
 				{
-					$itemIndent = self::lineIndent($code, self::tokenLine($tokens[$lastItem[
-						'start']]));
+					$itemIndent = self::lineIndent(
+						$code
+						, self::tokenLine($tokens[$lastItem['start']])
+					);
 					$closerIndent = self::lineIndent($code, self::tokenLine($closer));
 					$comment = self::lastCommentBetween($tokens, $lastItem['end'], $finalComma);
 					$start = $comment === null
@@ -447,8 +588,9 @@ final class SourceTransformer
 				continue;
 			}
 
-			if($mode === 'require' && self::tokenLine($closer) > self::tokenEndLine($tokens[
-				$lastItem['end']])){
+			if($mode === 'require' && self::tokenLine($closer) > self::tokenEndLine(
+				$tokens[$lastItem['end']]
+			)){
 				$itemIndent = self::lineIndent($code, self::tokenLine($tokens[$lastItem['start']]));
 				$closerIndent = self::lineIndent($code, self::tokenLine($closer));
 				$replacements[] = [$closer->pos, $closer->pos, "{$itemIndent},\n{$closerIndent}"];
@@ -528,8 +670,11 @@ final class SourceTransformer
 					continue;
 				}
 
-				$spacing = substr($code, self::tokenEnd($comma), $itemToken->pos - self::tokenEnd(
-					$comma));
+				$spacing = substr(
+					$code
+					, self::tokenEnd($comma)
+					, $itemToken->pos - self::tokenEnd($comma)
+				);
 
 				if($spacing !== ' ' && !self::hasCommentBetween($tokens, $commaIndex, $itemAnchor))
 				{
@@ -566,8 +711,10 @@ final class SourceTransformer
 		$code = self::applyReplacements($code, $replacements);
 		$tokens = self::tokens($code);
 
-		return self::applyReplacements($code, self::doubleArrowTrailingSpaceReplacements($code
-			, $tokens));
+		return self::applyReplacements(
+			$code
+			, self::doubleArrowTrailingSpaceReplacements($code, $tokens)
+		);
 	}
 
 	public static function withLeadingOperators(string $code): string
@@ -665,8 +812,11 @@ final class SourceTransformer
 				continue;
 			}
 
-			$between = substr($code, self::tokenEnd($token), $tokens[$next]->pos - self::tokenEnd(
-				$token));
+			$between = substr(
+				$code
+				, self::tokenEnd($token)
+				, $tokens[$next]->pos - self::tokenEnd($token)
+			);
 
 			if(!preg_match('/^[ \t]+$/', $between))
 			{
@@ -701,11 +851,14 @@ final class SourceTransformer
 			$left = $tokens[$leftIndex];
 			$right = $tokens[$rightIndex];
 			$closeClose = isset(self::CLOSING_DELIMITERS[$left->text], self::CLOSING_DELIMITERS[
-				$right->text]);
+				$right->text
+			]);
 			$openOpen = isset(self::OPENING_DELIMITERS[$left->text], self::OPENING_DELIMITERS[$right
-				->text]);
+				->text
+			]);
 			$closeOpen = isset(self::CLOSING_DELIMITERS[$left->text], self::OPENING_DELIMITERS[
-				$right->text]);
+				$right->text
+			]);
 
 			if(!$closeClose && !$openOpen && !$closeOpen)
 			{
@@ -871,7 +1024,8 @@ final class SourceTransformer
 	}
 
 	private static function classPropertyInitializerEntries(string $code, array $tokens
-		, array $span): array
+		, array $span
+	): array
 	{
 		$entries = [];
 		$statementStart = $span['open'] + 1;
@@ -900,8 +1054,12 @@ final class SourceTransformer
 
 			$entries = array_merge(
 				$entries
-				, self::classPropertyStatementInitializerEntries($code, $tokens, $statementStart
-					, $index)
+				, self::classPropertyStatementInitializerEntries(
+					$code
+					, $tokens
+					, $statementStart
+					, $index
+				)
 			);
 			$statementStart = $index + 1;
 		}
@@ -910,7 +1068,8 @@ final class SourceTransformer
 	}
 
 	private static function classPropertyStatementInitializerEntries(string $code, array $tokens
-		, int $start, int $end): array
+		, int $start, int $end
+	): array
 	{
 		$first = self::firstSignificantInRange($tokens, $start, $end);
 
@@ -987,10 +1146,16 @@ final class SourceTransformer
 				, 'left' => $left
 				, 'operator' => $equalsIndex
 				, 'value' => $value
-				, 'before' => substr($code, self::tokenEnd($tokens[$left]), $tokens[$equalsIndex]
-					->pos - self::tokenEnd($tokens[$left]))
-				, 'after' => substr($code, self::tokenEnd($tokens[$equalsIndex]), $tokens[$value]
-					->pos - self::tokenEnd($tokens[$equalsIndex]))
+				, 'before' => substr(
+					$code
+					, self::tokenEnd($tokens[$left])
+					, $tokens[$equalsIndex]->pos - self::tokenEnd($tokens[$left])
+				)
+				, 'after' => substr(
+					$code
+					, self::tokenEnd($tokens[$equalsIndex])
+					, $tokens[$value]->pos - self::tokenEnd($tokens[$equalsIndex])
+				)
 			];
 		}
 
@@ -998,7 +1163,8 @@ final class SourceTransformer
 	}
 
 	private static function classPropertyInitializerReplacements(string $code, array $tokens
-		, array $entries): array
+		, array $entries
+	): array
 	{
 		$alignmentEntries = [];
 		$targetWidth = 0;
@@ -1006,8 +1172,9 @@ final class SourceTransformer
 
 		foreach($entries as $entry)
 		{
-			if(self::tokenEndLine($tokens[$entry['left']]) !== self::tokenLine($tokens[$entry[
-				'operator']])
+			if(self::tokenEndLine($tokens[$entry['left']]) !== self::tokenLine(
+				$tokens[$entry['operator']]
+			)
 				|| !preg_match('/^[ \t]*$/', $entry['before'])
 				|| self::hasCommentBetween($tokens, $entry['left'], $entry['operator'])
 			){
@@ -1041,8 +1208,9 @@ final class SourceTransformer
 
 		foreach($entries as $entry)
 		{
-			if(self::tokenEndLine($tokens[$entry['operator']]) !== self::tokenLine($tokens[$entry[
-				'value']])
+			if(self::tokenEndLine($tokens[$entry['operator']]) !== self::tokenLine(
+				$tokens[$entry['value']]
+			)
 				|| !preg_match('/^[ \t]*$/', $entry['after'])
 				|| str_contains($entry['after'], ' ')
 				|| self::hasCommentBetween($tokens, $entry['operator'], $entry['value'])
@@ -1061,7 +1229,8 @@ final class SourceTransformer
 	}
 
 	private static function doubleArrowAlignmentReplacements(string $code, array $tokens
-		, array $items): array
+		, array $items
+	): array
 	{
 		$entries = [];
 		$targetWidth = 0;
@@ -1088,8 +1257,11 @@ final class SourceTransformer
 				continue;
 			}
 
-			$spacing = substr($code, self::tokenEnd($tokens[$keyEnd]), $tokens[$arrowIndex]
-				->pos - self::tokenEnd($tokens[$keyEnd]));
+			$spacing = substr(
+				$code
+				, self::tokenEnd($tokens[$keyEnd])
+				, $tokens[$arrowIndex]->pos - self::tokenEnd($tokens[$keyEnd])
+			);
 
 			if(!preg_match('/^[ \t]+$/', $spacing))
 			{
@@ -1099,8 +1271,9 @@ final class SourceTransformer
 			$anchor = $item['start'];
 
 			if($item['commaBefore'] !== null
-				&& self::tokenLine($tokens[$item['commaBefore']]) === self::tokenLine($tokens[$item[
-					'start']])
+				&& self::tokenLine($tokens[$item['commaBefore']]) === self::tokenLine(
+					$tokens[$item['start']]
+				)
 				&& self::isFirstNonWhitespaceOnLine($code, $tokens[$item['commaBefore']]->pos)
 			){
 				$anchor = $item['commaBefore'];
@@ -1206,8 +1379,10 @@ final class SourceTransformer
 			$last = $lineItems[count($lineItems) - 1];
 			$start = $tokens[$first['start']]->pos;
 
-			if($first['commaBefore'] !== null && self::tokenLine($tokens[$first[
-				'commaBefore']]) === $line){
+			if($first['commaBefore'] !== null && self::tokenLine(
+				$tokens[$first['commaBefore']]
+			) === $line
+			){
 				$start = $tokens[$first['commaBefore']]->pos;
 			}
 
@@ -1241,8 +1416,11 @@ final class SourceTransformer
 
 			foreach($lineItems as $index => $item)
 			{
-				$text = substr($code, $tokens[$item['start']]->pos, self::tokenEnd($tokens[$item[
-					'end']]) - $tokens[$item['start']]->pos);
+				$text = substr(
+					$code
+					, $tokens[$item['start']]->pos
+					, self::tokenEnd($tokens[$item['end']]) - $tokens[$item['start']]->pos
+				);
 
 				if($index === 0 && !$hasLeadingComma)
 				{
@@ -1325,7 +1503,8 @@ final class SourceTransformer
 	}
 
 	private static function firstCommentBetween(array $tokens, int $leftIndex
-		, int $rightIndex): ?int
+		, int $rightIndex
+	): ?int
 	{
 		$start = min($leftIndex, $rightIndex) + 1;
 		$end = max($leftIndex, $rightIndex);
@@ -1358,7 +1537,8 @@ final class SourceTransformer
 	}
 
 	private static function singleDocCommentBetween(array $tokens, int $leftIndex
-		, int $rightIndex): ?int
+		, int $rightIndex
+	): ?int
 	{
 		$start = min($leftIndex, $rightIndex) + 1;
 		$end = max($leftIndex, $rightIndex);
@@ -1383,14 +1563,18 @@ final class SourceTransformer
 	}
 
 	private static function isAllowedCompactPair(array $tokens, array $leftItem, array $rightItem
-		, \PhpToken $comma): bool
+		, \PhpToken $comma
+	): bool
 	{
-		return self::tokenLine($tokens[$leftItem['start']]) === self::tokenEndLine($tokens[
-			$leftItem['end']])
-			&& self::tokenLine($tokens[$rightItem['start']]) === self::tokenEndLine($tokens[
-				$rightItem['end']])
-			&& self::tokenEndLine($tokens[$leftItem['end']]) === self::tokenLine($tokens[$rightItem[
-				'start']])
+		return self::tokenLine($tokens[$leftItem['start']]) === self::tokenEndLine(
+			$tokens[$leftItem['end']]
+		)
+			&& self::tokenLine($tokens[$rightItem['start']]) === self::tokenEndLine(
+				$tokens[$rightItem['end']]
+			)
+			&& self::tokenEndLine($tokens[$leftItem['end']]) === self::tokenLine(
+				$tokens[$rightItem['start']]
+			)
 			&& self::tokenLine($comma) === self::tokenLine($tokens[$rightItem['start']]);
 	}
 
@@ -1553,21 +1737,29 @@ final class SourceTransformer
 		foreach($tokens as $index => $token)
 		{
 			if($token->id === T_START_HEREDOC) $heredoc = true;
+
 			if($heredoc)
 			{
 				$map[$index] = true;
+
 				if($token->id === T_END_HEREDOC) $heredoc = false;
+
 				continue;
 			}
+
 			if($quote !== null)
 			{
 				$map[$index] = true;
+
 				if($token->id === T_CURLY_OPEN || $token->id === T_DOLLAR_OPEN_CURLY_BRACES
-					|| $token->text === '{') $depth++;
+					|| $token->text === '{'
+				) $depth++;
 				elseif($token->text === '}' && $depth > 0) $depth--;
 				elseif($token->text === $quote && $depth === 0) $quote = null;
+
 				continue;
 			}
+
 			if($token->text === '"' || $token->text === '`')
 			{
 				$quote = $token->text;
@@ -1628,7 +1820,8 @@ final class SourceTransformer
 		$firstArgument = self::nextSignificant($tokens, $index);
 
 		if($firstArgument === null || self::tokenLine($tokens[$firstArgument]) === self::tokenLine(
-			$tokens[$index])){
+			$tokens[$index]
+		)){
 			return false;
 		}
 
@@ -1775,8 +1968,13 @@ final class SourceTransformer
 		return [
 			'items' => $items
 			, 'finalComma' => $finalComma !== null && ($segments[count($segments) - 1][
-				'comma'] === null && self::firstSignificantInRange($tokens, $segments[count(
-					$segments) - 1]['start'], $segments[count($segments) - 1]['end']) === null)
+				'comma'
+			] === null && self::firstSignificantInRange(
+				$tokens
+				, $segments[count($segments) - 1]['start']
+				, $segments[count($segments) - 1]['end']
+			) === null
+			)
 				? $finalComma
 				: null
 		];
@@ -2030,9 +2228,13 @@ final class SourceTransformer
 				continue;
 			}
 
-			$between = substr($code, self::tokenEnd($tokens[$previous]), $token
-				->pos - self::tokenEnd($tokens[$previous]));
+			$between = substr(
+				$code
+				, self::tokenEnd($tokens[$previous])
+				, $token->pos - self::tokenEnd($tokens[$previous])
+			);
 			$matchingClose = $closingForOpening[$index] ?? null;
+
 			if(isset($compact[$index]))
 			{
 				continue;
@@ -2049,7 +2251,8 @@ final class SourceTransformer
 				if($between !== $replacement)
 				{
 					$replacements[] = [self::tokenEnd($tokens[$previous]), $token->pos
-						, $replacement];
+						, $replacement
+					];
 				}
 
 				continue;
@@ -2111,8 +2314,9 @@ final class SourceTransformer
 				{
 					$keyword = self::previousSignificant($tokens, $index);
 
-					return $keyword === null ? self::tokenLine($token) : self::tokenLine($tokens[
-						$keyword]);
+					return $keyword === null ? self::tokenLine($token) : self::tokenLine(
+						$tokens[$keyword]
+					);
 				}
 			}
 		}
@@ -2123,139 +2327,40 @@ final class SourceTransformer
 	private static function withClosingRails(string $code): string
 	{
 		$tokens = self::tokens($code);
-		$interpolated = self::interpolationTokenMap($tokens);
-		$dynamicMemberBraces = self::dynamicMemberBraceMap($tokens);
 		$pairs = self::closingRailPairs($tokens);
 		$replacements = [];
 
-		foreach($pairs as $closingIndex => $openingIndex)
+		foreach($pairs as $close => $open)
 		{
-			if(isset($interpolated[$closingIndex]) || isset($interpolated[$openingIndex]))
-			{
-				continue;
-			}
+			$closing = $tokens[$close];
+			$opening = $tokens[$open];
 
-			$closing = $tokens[$closingIndex];
-			$opening = $tokens[$openingIndex];
-			if($opening->text === '{') continue;
-			$next = self::nextSignificant($tokens, $closingIndex);
+			if($opening->text === '{' || $opening->line === $closing->line) continue;
 
-			if($next !== null
-				&& self::tokenLine($tokens[$next]) === self::tokenLine($closing)
-				&& isset(self::CLOSING_DELIMITERS[$tokens[$next]->text])
-			){
-				continue;
-			}
+			$previous = $close - 1;
 
-			if(!self::isFirstNonWhitespaceOnLine($code, $closing->pos))
-			{
-				continue;
-			}
+			while($previous >= 0 && $tokens[$previous]->id === T_WHITESPACE) $previous--;
 
-			if(self::tokenLine($opening) === self::tokenLine($closing))
-			{
-				continue;
-			}
+			if($previous < 0) continue;
 
-			$expected = self::lineIndent($code, self::tokenLine($opening));
-			$lineStart = self::lineStartOffsetForOffset($code, $closing->pos);
-			$actual = substr($code, $lineStart, $closing->pos - $lineStart);
+			$indent = self::lineIndent($code, $opening->line);
+			$start = self::tokenEnd($tokens[$previous]);
+			$gap = substr($code, $start, $closing->pos - $start);
 
-			if($actual !== $expected)
-			{
-				$replacements[] = [$lineStart, $closing->pos, $expected];
-			}
+			$prefix = substr(
+				$code
+				, self::lineStartOffsetForOffset($code, $closing->pos)
+				, $closing->pos - self::lineStartOffsetForOffset($code, $closing->pos)
+			);
+			$sameRail = isset($pairs[$previous])
+				&& self::lineIndent($code, $tokens[$pairs[$previous]]->line) === $indent;
+
+			if($sameRail && !str_contains($gap, "\n")) continue;
+
+			if(trim($prefix) === '' && $prefix === $indent) continue;
+
+			$replacements[] = [$start, $closing->pos, "\n" . $indent];
 		}
-
-		foreach($tokens as $index => $token)
-		{
-			if(isset($interpolated[$index]) || isset($dynamicMemberBraces[$index]))
-			{
-				continue;
-			}
-
-			if(!isset(self::CLOSING_DELIMITERS[$token->text]) || !self::isFirstNonWhitespaceOnLine(
-				$code, $token->pos)){
-				continue;
-			}
-
-			$closingIndexes = [$index];
-
-			for($cursor = self::nextSignificant($tokens, $index); $cursor !== null; $cursor =
-				self::nextSignificant($tokens, $cursor)){
-				if(isset($dynamicMemberBraces[$cursor])
-					|| self::tokenLine($tokens[$cursor]) !== self::tokenLine($token)
-					|| !isset(self::CLOSING_DELIMITERS[$tokens[$cursor]->text])
-				){
-					break;
-				}
-
-				$closingIndexes[] = $cursor;
-			}
-
-			if(count($closingIndexes) < 2)
-			{
-				continue;
-			}
-
-			$openingIndents = [];
-
-			foreach($closingIndexes as $closingIndex)
-			{
-				if(!isset($pairs[$closingIndex]))
-				{
-					continue 2;
-				}
-
-				$openingIndents[] = self::lineIndent($code, self::tokenLine($tokens[$pairs[
-					$closingIndex]]));
-			}
-
-			if(count(array_unique($openingIndents)) <= 1)
-			{
-				continue;
-			}
-
-			$previous = self::previousSignificant($tokens, $index);
-
-			if($previous === null || $tokens[$previous]->text !== '}')
-			{
-				$expected = array_reduce($openingIndents, static fn(?string $shortest
-					, string $indent): string =>
-					$shortest === null || strlen($indent) < strlen(
-						$shortest) ? $indent : $shortest);
-				$start = self::lineStartOffsetForOffset($code, $token->pos);
-				if(substr($code, $start, $token->pos - $start) !== $expected)
-				{
-					$replacements[] = [$start, $token->pos, $expected];
-				}
-				continue;
-			}
-
-			if(self::lineIndent($code, self::tokenLine($tokens[$previous])) !== $openingIndents[0])
-			{
-				continue;
-			}
-
-			$replacement = '';
-			$currentIndent = $openingIndents[0];
-
-			foreach($closingIndexes as $offset => $closingIndex)
-			{
-				if($offset === 0 || $openingIndents[$offset] === $currentIndent)
-				{
-					$replacement .= $tokens[$closingIndex]->text;
-					continue;
-				}
-
-				$replacement .= "\n{$openingIndents[$offset]}{$tokens[$closingIndex]->text}";
-				$currentIndent = $openingIndents[$offset];
-			}
-
-			$last = $tokens[$closingIndexes[count($closingIndexes) - 1]];
-			$replacements[] = [$token->pos, self::tokenEnd($last), $replacement];
-		}
-
 		return self::applyReplacements($code, $replacements);
 	}
 
@@ -2290,57 +2395,6 @@ final class SourceTransformer
 			}
 
 			$replacements[] = [self::tokenEnd($tokens[$previous]), $token->pos, ''];
-		}
-
-		return self::applyReplacements($code, $replacements);
-	}
-
-	private static function withNestedCallCloserCompaction(string $code): string
-	{
-		$tokens = self::tokens($code);
-		$interpolated = self::interpolationTokenMap($tokens);
-		$replacements = [];
-
-		foreach($tokens as $index => $token)
-		{
-			if(isset($interpolated[$index]) || $token->text !== ')')
-			{
-				continue;
-			}
-
-			$previous = self::previousSignificant($tokens, $index);
-			$next = self::nextSignificant($tokens, $index);
-
-			if($previous === null
-				|| $next === null
-				|| $tokens[$previous]->text !== ']'
-				|| $tokens[$next]->text !== ')'
-			){
-				continue;
-			}
-
-			if(!self::isFirstNonWhitespaceOnLine($code, $token->pos)
-				|| !self::isFirstNonWhitespaceOnLine($code, $tokens[$next]->pos)
-			){
-				continue;
-			}
-
-			if(trim(self::lineText($code, self::tokenLine($token))) !== ')')
-			{
-				continue;
-			}
-
-			$between = substr($code, self::tokenEnd($token), $tokens[$next]->pos - self::tokenEnd(
-				$token));
-
-			if(trim($between) !== '')
-			{
-				continue;
-			}
-
-			$lineStart = self::lineStartOffsetForOffset($code, $token->pos);
-			$nextIndent = self::lineIndent($code, self::tokenLine($tokens[$next]));
-			$replacements[] = [$lineStart, $tokens[$next]->pos, $nextIndent . $token->text];
 		}
 
 		return self::applyReplacements($code, $replacements);

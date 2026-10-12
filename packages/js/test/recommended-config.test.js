@@ -37,19 +37,29 @@ const fixingEslint = new ESLint({
 const [jsResult] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js' });
 const [tsResult] = await eslint.lintText('const x: number = 1;', { filePath: 'fixture.ts' });
 const [semiResult] = await eslint.lintText('const x = 1\n', { filePath: 'fixture-semi.js' });
+
 const [ownLineSemiResult] = await eslint.lintText('foo()\n;\n'
-	, { filePath: 'fixture-own-line-semi.js' });
+	, { filePath: 'fixture-own-line-semi.js' }
+);
+
 const [fixedOwnLineSemiResult] = await fixingEslint.lintText('foo()\n;\nbar();\n'
-	, { filePath: 'fixture-own-line-semi.js' });
+	, { filePath: 'fixture-own-line-semi.js' }
+);
 const [bareNewResult] = await eslint.lintText('new Set;\n', { filePath: 'fixture-bare-new.js' });
+
 const [controlChainResult] = await eslint.lintText(
 	`if(graphs)\nfor(const graph of graphs)\n{\n\tgraph.delete(entity);\n}\n`
-	, { filePath: 'fixture-control-chain.js' });
+	, { filePath: 'fixture-control-chain.js' }
+);
+
 const [singleLineControlResult] = await eslint.lintText(`if(foo)\n\tbar();\n`
-	, { filePath: 'fixture-single-control.js' });
+	, { filePath: 'fixture-single-control.js' }
+);
+
 const [fixedJsdocResult] = await fixingEslint.lintText(
 	`/**\n * Keeps docs.\n */\nfunction example() {\n\treturn {\n\t\tvalue: 1\n\t};\n}\n`, {
-		filePath: 'fixture-fix.js'}
+		filePath: 'fixture-fix.js'
+	}
 );
 const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
 const readmeExampleMatch = readme.match(/### sm-no-saccade-style\s+```js\n([\s\S]*?)\n```/u);
@@ -79,9 +89,12 @@ assert.equal(controlChainResult.messages.length, 0);
 assert.equal(singleLineControlResult.messages.length, 0);
 assert.equal(readmeExampleResult.errorCount, 0);
 assert.equal(readmeExampleResult.warningCount, 2);
-assert.ok(readmeExampleResult.messages.every(message =>
-	message.ruleId === 'sm-no-saccade-style/max-unseparated-lines'
-));
+
+assert.ok(
+	readmeExampleResult.messages.every(
+		message => message.ruleId === 'sm-no-saccade-style/max-unseparated-lines'
+	)
+);
 
 assert.match(fixedJsdocResult.output, /\/\*\*\n \* Keeps docs\.\n \*\//u);
 assert.match(fixedJsdocResult.output, /function example\(\)\n\{/u);

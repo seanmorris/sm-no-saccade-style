@@ -6,25 +6,19 @@ import {
 	isFirstTokenOnLine,
 } from './_list-utils.js';
 
-const SUPPORTED_TYPES = new Set([
-	'ArrayExpression'
-	, 'ArrayPattern'
-	, 'ObjectExpression'
-	, 'ObjectPattern'
-
-]);
+const SUPPORTED_TYPES = new Set(
+	['ArrayExpression', 'ArrayPattern', 'ObjectExpression', 'ObjectPattern']
+);
 
 const OBJECT_TYPES = new Set([
 	'ObjectExpression'
 	, 'ObjectPattern'
 ]);
 const MAX_GROUPED_ROW_COLUMN = 80;
-const SPACED_FINAL_TYPES = new Set([
-	'ArrayExpression'
-	, 'ArrowFunctionExpression'
-	, 'FunctionExpression'
-	, 'ObjectExpression'
-]);
+
+const SPACED_FINAL_TYPES = new Set(
+	['ArrayExpression', 'ArrowFunctionExpression', 'FunctionExpression', 'ObjectExpression']
+);
 
 function buildMoveCommaFix(sourceCode, fixer, commaToken, itemToken)
 {
@@ -82,6 +76,7 @@ function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 	}
 
 	const indent = getTokenLineIndent(sourceCode, rowStartToken);
+
 	const replacement = lineItems
 		.map((item, index) => {
 			const text = sourceCode.getText(item);
@@ -223,18 +218,26 @@ export default {
 		function checkObjectColonSpacing(node)
 		{
 			const entries = collectObjectColonEntries(node);
-			const alignmentEntries = entries.filter((entry) =>
-				entry.colonToken.loc.end.line === entry.valueToken.loc.start.line
-				&& /^[\t ]*$/u.test(entry.afterText)
-				&& !hasCommentsBetween(sourceCode, entry.colonToken, entry.valueToken)
+
+			const alignmentEntries = entries.filter(
+				(entry) => entry.colonToken.loc.end.line === entry.valueToken.loc.start.line
+					&& /^[\t ]*$/u.test(
+						entry.afterText
+					) && !hasCommentsBetween(
+					sourceCode
+					, entry.colonToken
+					, entry.valueToken
+					)
 			);
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
 				&& alignmentEntries.length > 1
 				&& alignmentEntries.some((entry) => entry.afterText.length > 1);
+
 			const targetWidth = shouldAlign
 				? Math.max(
-					...alignmentEntries.map((entry) => entry.colonToken.range[1] - entry.anchorToken
-						.range[0] + 1)
+					...alignmentEntries.map(
+						(entry) => entry.colonToken.range[1] - entry.anchorToken.range[0] + 1
+					)
 				)
 				: 0;
 
@@ -248,8 +251,11 @@ export default {
 						, messageId: 'unexpectedSpaceBeforeObjectColon'
 						, fix: /^[\t ]+$/u.test(entry.beforeText)
 							&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.colonToken)
-							? (fixer) => buildObjectColonBeforeFix(fixer, entry.leftToken, entry
-								.colonToken)
+							? (fixer) => buildObjectColonBeforeFix(
+								fixer
+								, entry.leftToken
+								, entry.colonToken
+							)
 							: null
 					});
 				}
@@ -262,8 +268,12 @@ export default {
 				}
 
 				const replacement = shouldAlign
-					? ' '.repeat(Math.max(1, targetWidth - (entry.colonToken.range[1] - entry
-						.anchorToken.range[0])))
+					? ' '.repeat(
+						Math.max(
+							1
+							, targetWidth - (entry.colonToken.range[1] - entry.anchorToken.range[0])
+						)
+					)
 					: ' ';
 
 				if(entry.afterText === replacement)
@@ -281,8 +291,12 @@ export default {
 					, loc: entry.colonToken.loc
 					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue'
 						: 'expectedSpaceAfterObjectColon'
-					, fix: (fixer) => buildObjectColonAfterFix(fixer, entry.colonToken, entry
-						.valueToken, replacement)
+					, fix: (fixer) => buildObjectColonAfterFix(
+						fixer
+						, entry.colonToken
+						, entry.valueToken
+						, replacement
+					)
 				});
 			}
 		}
@@ -343,18 +357,26 @@ export default {
 		function checkClassPropertyEqualsSpacing(node)
 		{
 			const entries = collectClassPropertyEqualsEntries(node);
-			const alignmentEntries = entries.filter((entry) =>
-				entry.leftToken.loc.end.line === entry.equalsToken.loc.start.line
-				&& /^[\t ]*$/u.test(entry.beforeText)
-				&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
+
+			const alignmentEntries = entries.filter(
+				(entry) => entry.leftToken.loc.end.line === entry.equalsToken.loc.start.line
+					&& /^[\t ]*$/u.test(
+						entry.beforeText
+					) && !hasCommentsBetween(
+					sourceCode
+					, entry.leftToken
+					, entry.equalsToken
+					)
 			);
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
 				&& alignmentEntries.length > 1
 				&& alignmentEntries.some((entry) => entry.beforeText.length > 1);
+
 			const targetWidth = shouldAlign
 				? Math.max(
-					...alignmentEntries.map((entry) => entry.leftToken.range[1] - entry.anchorToken
-						.range[0] + 1)
+					...alignmentEntries.map(
+						(entry) => entry.leftToken.range[1] - entry.anchorToken.range[0] + 1
+					)
 				)
 				: 0;
 
@@ -365,19 +387,30 @@ export default {
 					&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
 				){
 					const replacement = shouldAlign
-						? ' '.repeat(Math.max(1, targetWidth - (entry.leftToken.range[1] - entry
-							.anchorToken.range[0])))
+						? ' '.repeat(
+							Math.max(
+								1
+								, targetWidth - (entry.leftToken.range[1] - entry.anchorToken.range[
+									0
+								])
+							)
+						)
 						: ' ';
 
 					if(entry.beforeText !== replacement && (shouldAlign || entry.beforeText
-						.length === 0)){
+						.length === 0
+					)){
 						context.report({
 							node: entry.property
 							, loc: entry.equalsToken.loc
 							, messageId: shouldAlign ? 'expectedAlignedClassPropertyEquals'
 								: 'expectedSpaceBeforeClassPropertyEquals'
-							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(fixer, entry
-								.leftToken, entry.equalsToken, replacement)
+							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(
+								fixer
+								, entry.leftToken
+								, entry.equalsToken
+								, replacement
+							)
 						});
 					}
 				}
@@ -394,8 +427,11 @@ export default {
 					node: entry.property
 					, loc: entry.equalsToken.loc
 					, messageId: 'expectedSpaceAfterClassPropertyEquals'
-					, fix: (fixer) => buildClassPropertyEqualsAfterFix(fixer, entry.equalsToken
-						, entry.valueToken)
+					, fix: (fixer) => buildClassPropertyEqualsAfterFix(
+						fixer
+						, entry.equalsToken
+						, entry.valueToken
+					)
 				});
 			}
 		}
@@ -513,8 +549,10 @@ export default {
 				}
 
 				if((isAllowedCompactPair(node, items[i - 1], items[i], commaToken, itemToken)
-					&& !isFirstTokenOnLine(sourceCode, commaToken))
-					|| isAllowedSpacedFinalItem(items, i)) {
+					&& !isFirstTokenOnLine(sourceCode, commaToken)
+				)
+					|| isAllowedSpacedFinalItem(items, i)
+				) {
 					continue;
 				}
 
@@ -566,7 +604,8 @@ export default {
 				}
 
 				if(isAllowedCompactPair(node, items[i], items[i + 1], itemToken, nextItemToken)
-					|| isAllowedSpacedFinalItem(items, i + 1)){
+					|| isAllowedSpacedFinalItem(items, i + 1)
+				){
 					continue;
 				}
 
@@ -581,8 +620,12 @@ export default {
 						, loc: commaToken.loc
 						, messageId: 'unexpectedTrailingComma'
 						, fix: canFix
-							? (fixer) => buildMoveCommaFix(sourceCode, fixer, commaToken
-								, nextItemToken)
+							? (fixer) => buildMoveCommaFix(
+								sourceCode
+								, fixer
+								, commaToken
+								, nextItemToken
+							)
 							: null
 					});
 				}

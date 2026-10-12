@@ -221,6 +221,7 @@ $config->setRules([
 	, SeanMorris\NoSaccadeStyle\Fixers::NO_SPACE_CONTROL_PAREN => true
 	, SeanMorris\NoSaccadeStyle\Fixers::NO_TRAILING_WHITESPACE => true
 	, SeanMorris\NoSaccadeStyle\Fixers::SEPARATOR_SPACING => true
+	, SeanMorris\NoSaccadeStyle\Fixers::STATEMENT_SPACING => true
 	, 'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line']
 	, 'semicolon_after_instruction' => true
 	, 'single_blank_line_at_eof' => true
@@ -263,6 +264,20 @@ Classes, named functions, and methods have a blank line before their declaration
 ## Style Guide
 
 This section describes how to lay out PHP so it already matches the formatter and lint rules this package enforces.
+
+### Statement groups and long calls
+
+Keep related assignments together. Insert a blank line before a following control statement, after a conditional, and before a multiline call statement. Leading comments stay with their statements. Directly nested controls and a loop followed by a return stay together.
+
+Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
+
+```php
+$entities[$object['id']] = $registry->create(
+	...($this->factories[$class])($object, $map)
+);
+```
+
+The separate warning for runs longer than 10 lines still asks for human judgment when no syntactic boundary determines a useful break.
 
 ### Parameters, calls, and loop headers
 
@@ -498,7 +513,7 @@ $static = Handler::{ $method }();
 
 ### Delimiter rails
 
-Do not add extra blank lines between adjacent delimiter-only lines.
+Multiline `()`, `{}`, and `[]` close at the indentation level of the line where they opened. Use a separate closing line when needed. Do not add extra blank lines between adjacent delimiter-only lines.
 
 ```php
 <?php
@@ -582,6 +597,8 @@ Avoid trailing spaces and tabs outside strings, keep one final newline at the en
 
 ## Rules
 
+- `SeanMorris/no_saccade_statement_spacing`
+  Separates control flow and multiline call statements from preceding work, and separates conditionals from following statements. Comments stay attached to their statements; nested control chains and loop-to-return transitions stay together.
 - `SeanMorris/no_saccade_separator_spacing`
   Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `SeanMorris/no_saccade_declaration_spacing`
@@ -594,7 +611,7 @@ Avoid trailing spaces and tabs outside strings, keep one final newline at the en
 - `SeanMorris/no_saccade_leading_operators`
   Moves continuation operators to the beginning of the next line.
 - `SeanMorris/no_saccade_allman_tabs`
-  Enforces Allman braces, tab indentation, closing delimiter rails, and compact nested call closers.
+  Enforces Allman braces, tab indentation, aligned closing delimiters, and complete-argument call wrapping.
 - `SeanMorris/no_saccade_no_double_closing_gap`
   Forbids extra blank lines between delimiter-only lines: no blank lines for `open -> open` or `close -> close`, and at most one blank line for `close -> open`.
 - `SeanMorris/no_saccade_no_space_control_paren`

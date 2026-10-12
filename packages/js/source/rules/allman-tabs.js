@@ -6,15 +6,16 @@ import { canCompactBody, DEFAULT_MAX_LENGTH } from './_layout.js';
 
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
-const MULTILINE_CONTROL_HEAD_TYPES = new Set([
-	'ForInStatement'
-	, 'ForOfStatement'
-	, 'ForStatement'
-	, 'IfStatement'
-	, 'SwitchStatement'
-	, 'WhileStatement'
-	, 'WithStatement'
-]);
+
+const MULTILINE_CONTROL_HEAD_TYPES = new Set(
+	['ForInStatement'
+		, 'ForOfStatement'
+		, 'ForStatement'
+		, 'IfStatement'
+		, 'SwitchStatement'
+		, 'WhileStatement', 'WithStatement'
+	]
+);
 
 function isInlineBody(node)
 {
@@ -66,8 +67,10 @@ function getOpeningBraceToken(sourceCode, node)
 {
 	if(node.type === 'SwitchStatement')
 	{
-		const rightParen = sourceCode.getTokenAfter(node.discriminant, (token) => token
-			.value === ')');
+		const rightParen = sourceCode.getTokenAfter(
+			node.discriminant
+			, (token) => token.value === ')'
+		);
 
 		return sourceCode.getTokenAfter(rightParen, (token) => token.value === '{');
 	}
@@ -157,43 +160,6 @@ function getTokenLineIndent(sourceCode, token)
 	const line = sourceCode.lines[token.loc.start.line - 1];
 
 	return line.match(/^[\t ]*/u)[0];
-}
-
-export function buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens
-	, openingIndents){
-	const previousLineIndent = getTokenLineIndent(sourceCode, previousToken);
-
-	if(previousLineIndent !== openingIndents[0])
-	{
-		return null;
-	}
-
-	let replacement = '';
-	let currentIndent = openingIndents[0];
-
-	for(let i = 0; i < closingTokens.length; i += 1)
-	{
-		const token = closingTokens[i];
-		const openingIndent = openingIndents[i];
-
-		if(i === 0)
-		{
-			replacement += token.value;
-			continue;
-		}
-
-		if(openingIndent === currentIndent)
-		{
-			replacement += token.value;
-			continue;
-		}
-
-		replacement += `\n${openingIndent}${token.value}`;
-		currentIndent = openingIndent;
-	}
-
-	return fixer.replaceTextRange([previousToken.range[1], closingTokens.at(-1).range[1]]
-		, replacement);
 }
 
 function isOwnLineClosingDelimiter(sourceCode, descriptor)
@@ -293,7 +259,8 @@ export default {
 			, properties: {
 				maxLineLength: { type: 'integer', minimum: 40 }
 			}
-			, additionalProperties: false }]
+			, additionalProperties: false
+		}]
 		, messages: {
 			...indentRule.meta.messages,
 			...noMixedSpacesAndTabsRule.meta.messages,
@@ -302,8 +269,6 @@ export default {
 				'Inline opening brace should stay on the same line as the head.'
 			, unexpectedMultilineControlOpen: 'Multiline control heads should keep the opening brace on the same line as the closing parenthesis.'
 			, unexpectedMultilineFunctionOpen: 'Multiline function heads should keep the opening brace on the same line as the closing parenthesis.'
-			, mixedClosingRays:
-				'Closing delimiters that belong to different opening rails should not share a line.'
 			, expandedBody: 'Multiline blocks need separate statement and brace lines.'
 		}
 		, docs: {
@@ -321,6 +286,7 @@ export default {
 			return blockIndents.get(token.range[0]) ?? getTokenLineIndent(sourceCode, token);
 		}
 		const chainedCallbackBodyRanges = collectChainedCallbackBodyRanges(sourceCode.ast);
+
 		const filteredIndentContext = withOptions(
 			withReportFilter(
 				context,
@@ -338,8 +304,10 @@ export default {
 			indentOptions
 		);
 		const indentListeners = indentRule.create(filteredIndentContext);
-		const noMixedListeners = noMixedSpacesAndTabsRule.create(withOptions(context, [
-			'smart-tabs']));
+
+		const noMixedListeners = noMixedSpacesAndTabsRule.create(
+			withOptions(context, ['smart-tabs'])
+		);
 
 		function checkOpeningBrace(node)
 		{
@@ -362,8 +330,10 @@ export default {
 			}
 
 			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace
-				, { includeComments: true }).some((token) => token.type === 'Block' || token
-					.type === 'Line');
+				, { includeComments: true }
+			).some(
+				(token) => token.type === 'Block' || token.type === 'Line'
+			);
 			const inlineBody = isInlineBody(node);
 			const emptyBody = isEmptyBody(node);
 			const multilineControlHead = hasMultilineControlHead(node);
@@ -382,9 +352,10 @@ export default {
 					, messageId: 'unexpectedMultilineControlOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1]
-							, openingBrace
-							.range[0]], '')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ''
+						)
 				});
 
 				return;
@@ -403,9 +374,10 @@ export default {
 					, messageId: 'unexpectedMultilineFunctionOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1]
-							, openingBrace
-							.range[0]], '')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ''
+						)
 				});
 
 				return;
@@ -424,9 +396,10 @@ export default {
 					, messageId: 'unexpectedInlineAllmanOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1]
-							, openingBrace
-							.range[0]], ' ')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ' '
+						)
 				});
 
 				return;
@@ -443,9 +416,10 @@ export default {
 				, messageId: 'expectedAllmanOpen'
 				, fix: hasComments
 					? null
-					: (fixer) => fixer.replaceTextRange([previousToken.range[1]
-						, openingBrace.range[
-							0]], '\n')
+					: (fixer) => fixer.replaceTextRange(
+						[previousToken.range[1], openingBrace.range[0]]
+						, '\n'
+					)
 			});
 		}
 
@@ -455,7 +429,9 @@ export default {
 			const owner = node.type === 'SwitchStatement' ? node : node.parent;
 			const first = sourceCode.getFirstToken(owner);
 			blockIndents.set(open.range[0], getTokenLineIndent(sourceCode, first));
+
 			if(canCompactBody(node, sourceCode, maxLength)) return;
+
 			const close = sourceCode.getLastToken(node);
 			const children = node.type === 'SwitchStatement' ? node.cases : node.body;
 			const ranges = new Map();
@@ -463,21 +439,28 @@ export default {
 			function separate(left, right)
 			{
 				if(left.loc.end.line !== right.loc.start.line) return;
+
 				const between = sourceCode.text.slice(left.range[1], right.range[0]);
+
 				if(between.trim()) return;
+
 				ranges.set(left.range[1], [left.range[1], right.range[0]]);
 			}
 			separate(open, sourceCode.getTokenAfter(open, { includeComments: true }));
 			separate(sourceCode.getTokenBefore(close, { includeComments: true }), close);
+
 			for(const child of children)
 			{
 				const first = sourceCode.getFirstToken(child);
 				separate(sourceCode.getTokenBefore(first, { includeComments: true }), first);
 			}
+
 			if(!ranges.size) return;
+
 			context.report({ node, messageId: 'expandedBody'
 				, fix: fixer =>
-					[...ranges.values()].map(range => fixer.replaceTextRange(range, '\n')) });
+					[...ranges.values()].map(range => fixer.replaceTextRange(range, '\n'))
+			});
 		}
 
 		function stripSpaceBeforeOpeningBrace(node)
@@ -514,96 +497,66 @@ export default {
 				node
 				, loc: openingBrace.loc
 				, message: 'Unexpected horizontal whitespace before an Allman opening brace.'
-				, fix: (fixer) => fixer.replaceTextRange([previousToken.range[1]
-					, openingBrace
-					.range[0]], between.replace(/[ \t]+\n([ \t]*)$/u, '\n$1'))
+				, fix: (fixer) => fixer.replaceTextRange(
+					[previousToken.range[1], openingBrace.range[0]]
+					, between.replace(/[ \t]+\n([ \t]*)$/u, '\n$1')
+				)
 			});
 		}
 
 		function checkClosingDelimiterIndent()
 		{
-			const tokens = sourceCode.ast.tokens;
 			const stack = [];
+			const pairs = new Map();
 
-			for(let i = 0; i < tokens.length; i += 1)
+			for(const token of sourceCode.ast.tokens)
 			{
-				const token = tokens[i];
+				if(token.type !== 'Punctuator') continue;
 
-				if('([{'.includes(token.value))
+				if(['(', '[', '{'].includes(token.value))
 				{
 					stack.push(token);
 					continue;
 				}
 
-				if(!')]}'.includes(token.value))
-				{
-					continue;
-				}
+				if(![')', ']', '}'].includes(token.value)) continue;
 
-				const openingToken = stack.pop();
+				const opening = stack.pop();
 
-				const lineIndent = getTokenLineIndent(sourceCode, token);
+				if(!opening) continue;
 
-				if(lineIndent.length !== token.loc.start.column)
-				{
-					continue;
-				}
+				pairs.set(token, opening);
 
-				const previousToken = tokens[i - 1];
+				if(opening.loc.start.line === token.loc.start.line) continue;
 
-				const closingTokens = [token];
-				const openingTokens = [openingToken];
-				const tempStack = stack.slice();
+				const previous = sourceCode.getTokenBefore(token, { includeComments: true });
+				const expected = openingIndent(opening);
+				const range = [previous.range[1], token.range[0]];
+				const gap = sourceCode.text.slice(...range);
 
-				for(let j = i + 1; j < tokens.length; j += 1)
-				{
-					const nextToken = tokens[j];
+				const sameRail = pairs.has(
+					previous
+				) && openingIndent(
+					pairs.get(previous)
+				) === expected;
 
-					if(nextToken.loc.start.line !== token.loc.start.line || !')]}'.includes(
-						nextToken.value)){
-						break;
-					}
+				if(sameRail && !gap.includes('\n')) continue;
 
-					const nextOpeningToken = tempStack.pop();
+				const prefix = sourceCode.lines[token.loc.start.line - 1].slice(
+					0
+					, token.loc.start.column
+				);
 
-					closingTokens.push(nextToken);
-					openingTokens.push(nextOpeningToken);
-				}
+				if(prefix === expected) continue;
 
-				const openingIndents = openingTokens.map(openingIndent);
-				const distinctOpeningIndents = [...new Set(openingIndents)];
-
-				if(distinctOpeningIndents.length > 1)
-				{
-					context.report({
-						loc: token.loc
-						, messageId: 'mixedClosingRays'
-						, fix: (fixer) => buildMixedClosingRailFix(sourceCode, fixer, previousToken
-							, closingTokens, openingIndents)
-					});
-
-					continue;
-				}
-
-				const expectedIndent = openingTokens
-					.map(openingIndent)
-					.sort((left, right) => left.length - right.length)[0];
-
-				if(openingTokens.some((candidate) => candidate.loc.start.line === token.loc.start
-					.line) || lineIndent === expectedIndent){
-					continue;
-				}
+				if(token.value === '}' && blockIndents.has(opening.range[0])
+					&& previous.loc.end.line === token.loc.start.line
+				) continue;
 
 				context.report({
 					loc: token.loc
 					, message: `Closing '${token.value}' should align with its opening rail.`
-					, fix: (fixer) => fixer.replaceTextRange(
-						[
-							token.range[0] - token.loc.start.column
-							, token.range[0]
-						],
-						expectedIndent
-					)
+					, fix: fixer => fixer.replaceTextRange(range, `\n${expected}`)
 				});
 			}
 		}

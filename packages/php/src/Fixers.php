@@ -13,6 +13,7 @@ use SeanMorris\NoSaccadeStyle\Fixer\NoDoubleClosingGapFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\NoSpaceControlParenFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\NoTrailingWhitespaceFixer;
 use SeanMorris\NoSaccadeStyle\Fixer\SeparatorSpacingFixer;
+use SeanMorris\NoSaccadeStyle\Fixer\StatementSpacingFixer;
 
 final class Fixers
 {
@@ -25,6 +26,7 @@ final class Fixers
 	public const NO_SPACE_CONTROL_PAREN = 'SeanMorris/no_saccade_no_space_control_paren';
 	public const NO_TRAILING_WHITESPACE = 'SeanMorris/no_saccade_no_trailing_whitespace';
 	public const SEPARATOR_SPACING = 'SeanMorris/no_saccade_separator_spacing';
+	public const STATEMENT_SPACING = 'SeanMorris/no_saccade_statement_spacing';
 
 	public static function all(): array
 	{
@@ -38,6 +40,7 @@ final class Fixers
 			, new NoTrailingWhitespaceFixer()
 			, new DeclarationSpacingFixer()
 			, new SeparatorSpacingFixer()
+			, new StatementSpacingFixer()
 		];
 	}
 }

@@ -14,6 +14,8 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 - Class property initializer `=` signs keep at least one space before and after `=`; single spacing before `=` is accepted, and a class body is realigned only when at least one initialized property has more than one space before `=`.
 - Multiline continuation operators lead the continued line.
 - Lines target 100 columns, with tabs advancing to four-column tab stops. Both packages wrap at token boundaries and report lines that still exceed the limit. Long literal payloads are exempt by default and are never rewritten.
+- Long calls expand at their outer argument list first. Complete arguments get continuation lines; nested calls that fit remain together. Whitespace-only wraps inside a nested argument may be rejoined, without flattening comments, blocks, or multiline literals.
+- Within multiline bodies, separate setup from a following control statement, separate a conditional from the following statement, and separate multiline call statements from preceding work. Keep leading comments with their statements. Directly nested control chains and loop-to-return transitions do not require extra blank lines.
 - Classes, named functions, and methods have a blank line before their declaration. Put that blank line before attached documentation and attributes or decorators, including the first method in a class. A declaration at the beginning of a JavaScript file does not need a leading empty line.
 - Normal declarations and block forms use Allman opening braces.
 - A compact braced body is allowed only when the complete construct is on one line, fits the line limit, and its braces are required by the language. Short functions and complete `try/catch/finally` statements may stay compact.
@@ -22,7 +24,7 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 - Inline callbacks and expressions remain attached to their enclosing expression. Assigned functions and JavaScript object methods receive declaration spacing.
 - Multiline control/function heads keep the opening brace on the same line as the closing parenthesis.
 - Indentation uses tabs.
-- Closing delimiters align with their opening rail.
+- Multiline parentheses, braces, and square brackets close on the indentation level of the line where they opened, using a separate closing line when needed. A short nested call can keep its closing parenthesis on its argument line; the outer multiline call closes on its own indentation level.
 - Closing delimiters from different opening rails do not share one line.
 - Extra blank lines between adjacent structural delimiters are removed: no blank lines for `open -> open` or `close -> close`, and at most one blank line for `close -> open`.
 - Control keywords hug the opening parenthesis.
