@@ -5,6 +5,8 @@ The JavaScript and PHP packages enforce the same readable layout goals where eac
 ## Rules
 
 - Multiline list commas lead continued items, and each leading comma is followed by exactly one space.
+- Function and method parameters and call arguments use one space after a comma when the next item is on the same line. This includes closures, arrow functions, and constructor calls. Existing newlines and comments are preserved.
+- A `for` header uses one space after each semicolon when another clause follows on the same line, including an empty middle clause. No space is added before the closing parenthesis or at the end of a line.
 - Final comma-only lines are forbidden in the recommended preset.
 - Compact grouped list rows are allowed when they stay short; over-wide grouped rows are split onto separate continued lines.
 - PHP array arrows keep at least one space after `=>`; single spacing before `=>` is accepted, and a multiline list is realigned only when at least one item has more than one space before `=>`.

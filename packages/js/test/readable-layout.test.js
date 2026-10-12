@@ -48,7 +48,7 @@ assert.equal(create, `class World
 		this.entities[id] = [];
 		for(const c of components)
 		{
-			this.add(id,c);
+			this.add(id, c);
 		}
 		return id;
 	}
@@ -151,3 +151,70 @@ assert.equal(literal.warningCount, 0);
 const warningsInput = 'work();\n'.repeat(11);
 const [warningFix] = await eslint.lintText(warningsInput, {filePath: 'runs.js'});
 assert.equal(warningFix.output ?? warningsInput, warningsInput);
+
+const separators = await format(`function combine(first,second = pick(1,2),...rest){ return first; }
+class Worker {
+run(first,second){ return combine(first,second); }
+}
+const callback = (first,second) => combine(first,second);
+const worker = new Worker(1,2);
+worker.run?.(1,/* keep the argument comment */2);
+combine((first),(second));
+combine('literal,;','unchanged');
+combine(first,   second);
+`);
+assert.match(separators, /combine\(first, second = pick\(1, 2\), \.\.\.rest\)/u);
+assert.match(separators, /run\(first, second\)/u);
+assert.match(separators, /\(first, second\) => combine\(first, second\)/u);
+assert.match(separators, /new Worker\(1, 2\)/u);
+assert.match(separators, /run\?\.\(1, \/\* keep the argument comment \*\/2\)/u);
+assert.match(separators, /combine\(\(first\), \(second\)\)/u);
+assert.match(separators, /combine\('literal,;', 'unchanged'\)/u);
+assert.doesNotMatch(separators, /, {2}/u);
+
+const loops = await format(`for(let i = 0;i < 3;i++){ use(i); }
+for(;;){ break; }
+for(;ready;){ break; }
+for(let i = (() => { tick(); return 0; })();i < 3;i++){ use(i); }
+for(
+let i = 0;
+i < 3;
+i++
+){ use(i); }
+for(let i = 0;/* keep the loop comment */i < 3;i++){ use(i); }
+`);
+assert.match(loops, /for\(let i = 0; i < 3; i\+\+\)/u);
+assert.match(loops, /for\(; ;\)/u);
+assert.match(loops, /for\(; ready;\)/u);
+assert.match(loops, /\}\)\(\); i < 3; i\+\+\)/u);
+assert.match(loops, /let i = 0;\n\ti < 3;\n\ti\+\+/u);
+assert.match(loops, /0; \/\* keep the loop comment \*\/i < 3; i\+\+\)/u);
+
+const leadingArguments = `function combine(
+	first
+	, second
+){
+	return run(first
+		, second);
+}
+`;
+assert.equal(await format(leadingArguments), leadingArguments);
+
+const typedInput = `declare function run(first: number,second: number): void;
+interface Worker {
+run(first: number,second: number): void;
+}
+type Callback = (first: number,second: number) => void;
+run<number>(1,2);
+`;
+const [typedSpacing] = await eslint.lintText(typedInput, { filePath: 'spacing.ts' });
+assert.equal(typedSpacing.errorCount, 0, JSON.stringify(typedSpacing.messages));
+assert.equal((typedSpacing.output.match(/first: number, second: number/gu) ?? []).length, 3);
+assert.match(typedSpacing.output, /run<number>\(1, 2\)/u);
+const [typedAgain] = await eslint.lintText(typedSpacing.output, { filePath: 'spacing.ts' });
+assert.equal(typedAgain.output ?? typedSpacing.output, typedSpacing.output);
+
+const [indentedLiteral] = await checking.lintText(`'${'x'.repeat(101)}';\n`, {
+	filePath: 'literal.js'
+});
+assert.equal(indentedLiteral.errorCount, 0);

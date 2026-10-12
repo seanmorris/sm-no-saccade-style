@@ -159,6 +159,19 @@ Classes, functions, and methods have a blank line before their declaration. Atta
 
 This section describes how to lay out code so it already matches the formatter and lint rules this package enforces.
 
+### Parameters, calls, and loop headers
+
+Use one space after commas in function definitions and calls, and after semicolons in `for` headers. This also covers methods, arrow functions, constructor calls, and TypeScript signatures. Multiline headers keep their line breaks; no trailing spaces are added.
+
+```js
+function add(left, right){ return left + right; }
+
+for(let i = 0; i < count; i++)
+{
+	add(i, count);
+}
+```
+
 ### Lists and records
 
 Keep commas on the next line for multiline arrays, objects, object patterns, and array patterns.
@@ -408,6 +421,8 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 
 ## Rules
 
+- `sm-no-saccade-style/separator-spacing`
+  Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `sm-no-saccade-style/declaration-spacing`
   Adds a blank line before declarations, including their documentation and decorators.
 - `sm-no-saccade-style/max-line-length`

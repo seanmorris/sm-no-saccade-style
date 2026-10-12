@@ -1040,7 +1040,8 @@ PHP
 		$this->assertArrayHasKey(Fixers::LEADING_OPERATORS, $config->getRules());
 		$this->assertArrayHasKey('multiline_whitespace_before_semicolons', $config->getRules());
 		$this->assertArrayHasKey('semicolon_after_instruction', $config->getRules());
-		$this->assertCount(8, $config->getCustomFixers());
+		$this->assertArrayHasKey(Fixers::SEPARATOR_SPACING, $config->getRules());
+		$this->assertCount(9, $config->getCustomFixers());
 	}
 
 	public function testCustomFixersExposeMetadata(): void
@@ -1054,6 +1055,7 @@ PHP
 			, Fixers::NO_SPACE_CONTROL_PAREN
 			, Fixers::NO_TRAILING_WHITESPACE
 			, Fixers::DECLARATION_SPACING
+			, Fixers::SEPARATOR_SPACING
 		];
 
 		foreach(Fixers::all() as $index => $fixer)

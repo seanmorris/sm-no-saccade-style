@@ -126,6 +126,50 @@ final class SourceTransformer
 		return self::applyReplacements($code, $replacements);
 	}
 
+	public static function withSeparatorSpacing(string $code): string
+	{
+		$tokens = self::tokens($code);
+		$protected = self::interpolationTokenMap($tokens);
+		$stack = [];
+		$replacements = [];
+
+		foreach($tokens as $index => $token)
+		{
+			if(isset($protected[$index])) continue;
+			if(isset(self::OPENING_DELIMITERS[$token->text]) || $token->id === T_ATTRIBUTE)
+			{
+				$previous = self::previousSignificant($tokens, $index);
+				$stack[] = [
+					$token->id === T_ATTRIBUTE ? '[' : $token->text
+					, $previous !== null && $tokens[$previous]->id === T_FOR
+				];
+				continue;
+			}
+			if(isset(self::CLOSING_DELIMITERS[$token->text]))
+			{
+				array_pop($stack);
+				continue;
+			}
+
+			$parent = end($stack);
+			if($parent === false || $parent[0] !== '(') continue;
+			if($token->text !== ',' && !($token->text === ';' && $parent[1])) continue;
+			$next = $index + 1;
+			while(isset($tokens[$next]) && $tokens[$next]->id === T_WHITESPACE) $next++;
+			if(!isset($tokens[$next]) || $tokens[$next]->text === ')') continue;
+
+			$start = self::tokenEnd($token);
+			$end = $tokens[$next]->pos;
+			$gap = substr($code, $start, $end - $start);
+			if($gap !== ' ' && !str_contains($gap, "\n") && !str_contains($gap, "\r"))
+			{
+				$replacements[] = [$start, $end, ' '];
+			}
+		}
+
+		return self::applyReplacements($code, $replacements);
+	}
+
 	public static function withDeclarationSpacing(string $code): string
 	{
 		$tokens = self::tokens($code);

@@ -220,6 +220,7 @@ $config->setRules([
 	, SeanMorris\NoSaccadeStyle\Fixers::NO_DOUBLE_CLOSING_GAP => true
 	, SeanMorris\NoSaccadeStyle\Fixers::NO_SPACE_CONTROL_PAREN => true
 	, SeanMorris\NoSaccadeStyle\Fixers::NO_TRAILING_WHITESPACE => true
+	, SeanMorris\NoSaccadeStyle\Fixers::SEPARATOR_SPACING => true
 	, 'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line']
 	, 'semicolon_after_instruction' => true
 	, 'single_blank_line_at_eof' => true
@@ -262,6 +263,19 @@ Classes, named functions, and methods have a blank line before their declaration
 ## Style Guide
 
 This section describes how to lay out PHP so it already matches the formatter and lint rules this package enforces.
+
+### Parameters, calls, and loop headers
+
+Use one space after commas in function definitions and calls, and after semicolons in `for` headers. This also covers methods, closures, arrow functions, and constructor calls. Multiline headers keep their line breaks; no trailing spaces are added.
+
+```php
+function add($left, $right){ return $left + $right; }
+
+for($i = 0; $i < $count; $i++)
+{
+	add($i, $count);
+}
+```
 
 ### Lists and records
 
@@ -568,6 +582,8 @@ Avoid trailing spaces and tabs outside strings, keep one final newline at the en
 
 ## Rules
 
+- `SeanMorris/no_saccade_separator_spacing`
+  Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `SeanMorris/no_saccade_declaration_spacing`
   Adds a blank line before declarations, including their PHPDoc and attributes.
 

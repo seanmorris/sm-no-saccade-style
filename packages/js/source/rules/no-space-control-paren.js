@@ -13,6 +13,11 @@ const CONTROL_TYPES = new Set([
 
 function getParenToken(sourceCode, node)
 {
+	if(node.type === 'ForStatement')
+	{
+		return sourceCode.getTokenAfter(sourceCode.getFirstToken(node));
+	}
+
 	if(node.type === 'CatchClause')
 	{
 		return node.param ? sourceCode.getFirstTokenBetween(sourceCode.getFirstToken(node), node

@@ -32,6 +32,7 @@ final class ConfigFactory
 				, Fixers::NO_DOUBLE_CLOSING_GAP => true
 				, Fixers::NO_SPACE_CONTROL_PAREN => true
 				, Fixers::NO_TRAILING_WHITESPACE => true
+				, Fixers::SEPARATOR_SPACING => true
 				, 'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line']
 				, 'semicolon_after_instruction' => true
 				, 'single_blank_line_at_eof' => true

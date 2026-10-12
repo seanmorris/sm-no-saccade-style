@@ -40,6 +40,7 @@ final class Diagnostics
 				, T_CLOSE_TAG], true)) continue;
 			$literal = in_array($token->id, [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE]
 				, true);
+			preg_match('/^[\t ]*/', $lines[$token->line - 1], $indent);
 			for($line = $token->line; $line <= $end; $line++)
 			{
 				if($token->id === T_INLINE_HTML)
@@ -49,7 +50,7 @@ final class Diagnostics
 				}
 				if(!$literal || $line === $token->line || $line === $end) $codeLines[$line] = true;
 				if($ignoreLiterals && $literal && ($end !== $token->line || self::columns($token
-					->text, $tabWidth) > $maxLineLength)){
+					->text, $tabWidth) + self::columns($indent[0], $tabWidth) > $maxLineLength)){
 					$excluded[$line] = true;
 				}
 			}

@@ -40,7 +40,7 @@ class World
 		$this->entities[$id] = [];
 		foreach($components as $c)
 		{
-			$this->add($id,$c);
+			$this->add($id, $c);
 		}
 		return $id;
 	}
@@ -204,6 +204,84 @@ PHP);
 		{
 			unlink($file);
 		}
+	}
+
+	public function testArgumentSpacingInDeclarationsAndCalls(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+function combine($first,$second = 2,...$rest){ return $first; }
+class Worker {
+public function run($first,$second){ return combine($first,$second); }
+}
+$callback = fn($first,$second) => combine($first,$second);
+$closure = function($first,$second) use ($left,$right){ return combine($first,$second); };
+$worker = new Worker(1,2);
+$worker?->run(1,/* keep the argument comment */2);
+Worker::run(first: 1,second: combine(2,3));
+combine('literal,;','unchanged');
+combine($first,   $second);
+
+PHP);
+		self::assertStringContainsString('combine($first, $second = 2, ...$rest)', $output);
+		self::assertStringContainsString('run($first, $second)', $output);
+		self::assertStringContainsString('fn($first, $second) => combine($first, $second)'
+			, $output);
+		self::assertStringContainsString('use ($left, $right)', $output);
+		self::assertStringContainsString('new Worker(1, 2)', $output);
+		self::assertStringContainsString('run(1, /* keep the argument comment */2)', $output);
+		self::assertStringContainsString('Worker::run(first: 1, second: combine(2, 3))', $output);
+		self::assertStringContainsString("combine('literal,;', 'unchanged')", $output);
+		self::assertStringNotContainsString(',  ', $output);
+	}
+
+	public function testIndentedLiteralsThatCannotFitAreExempt(): void
+	{
+		$source = "<?php\n\t\t\t'" . str_repeat('x', 90) . "';\n";
+		self::assertSame([], Diagnostics::analyze($source));
+		$messages = Diagnostics::analyze($source, ignoreLiterals: false);
+		self::assertSame('max-line-length', $messages[0]['rule']);
+	}
+
+	public function testForHeaderSpacingIncludesEmptyClausesAndPreservesNewlines(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+for($i = 0;$i < 3;$i++){ useValue($i); }
+for(;;){ break; }
+for(;$ready;){ break; }
+for($i = (function(){ tick(); return 0; })();$i < 3;$i++){ useValue($i); }
+for(
+$i = 0;
+$i < 3;
+$i++
+){ useValue($i); }
+for($i = 0;/* keep the loop comment */$i < 3;$i++){ useValue($i); }
+
+PHP);
+		self::assertStringContainsString('for($i = 0; $i < 3; $i++)', $output);
+		self::assertStringContainsString('for(; ;)', $output);
+		self::assertStringContainsString('for(; $ready;)', $output);
+		self::assertStringContainsString('})(); $i < 3; $i++)', $output);
+		self::assertStringContainsString("\$i = 0;\n\t\$i < 3;\n\t\$i++", $output);
+		self::assertStringContainsString('0; /* keep the loop comment */$i < 3; $i++)', $output);
+	}
+
+	public function testArgumentSpacingPreservesLeadingCommas(): void
+	{
+		$input = <<<'PHP'
+<?php
+
+function combine(
+	$first
+	, $second
+){
+	return run($first
+		, $second);
+}
+
+PHP;
+		self::assertSame($input, $this->format($input));
 	}
 
 	private function format(string $input): string
