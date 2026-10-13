@@ -55,6 +55,7 @@ assert.equal(create, `class World
 		{
 			this.add(id, c);
 		}
+
 		return id;
 	}
 }
@@ -72,7 +73,8 @@ const nested = await format(`for(const item of items)
 `
 );
 assert.match(nested, /for\(const item of items\)\n\{\n\tif\(item.enabled\)\n\t\{/u);
-assert.doesNotMatch(nested, /\{ (?:if|for|remove)|; \}|\} \}/u);
+assert.doesNotMatch(nested, /\{ (?:if|for|remove)|; \}/u);
+assert.match(nested, /\} \}\n\n\t\temit/u);
 
 assert.equal(await format('if(ready){ run(); }\n'), 'if(ready)\n{\n\trun();\n}\n');
 
@@ -274,6 +276,7 @@ const spawnExpected = spawning
 		, "const className = object.class ?? object.type ?? '';\n\n"
 	)
 	.replace('\t\t\t\t}\n\t\t\t\tobject.x', '\t\t\t\t}\n\n\t\t\t\tobject.x')
+	.replace('\t\treturn entities;', '\n\t\treturn entities;')
 	.replace(`\t\t\t\tentities[object['id']] = registry.create(...(this.factories[className])(object
 					, map));`, `
 				entities[object['id']] = registry.create(
@@ -324,7 +327,7 @@ assert.match(grouped, /results = \[\];\n\n\t\/\/ Filter/u);
 assert.match(grouped, /ready = item !== null;\n\n\t\t\/\*\* Keep/u);
 assert.match(grouped, /\}\n\t\telse if/u);
 assert.match(grouped, /\}\n\n\t\t\/\/ Keep processing/u);
-assert.match(grouped, /\t\}\n\treturn results;/u);
+assert.match(grouped, /\t\}\n\n\treturn results;/u);
 await format('const result = outer(\n\tinner(\n\t\t[true] // keep\n\t));\n');
 
 const constructed = await format(

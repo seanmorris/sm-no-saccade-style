@@ -14,6 +14,163 @@ use SeanMorris\NoSaccadeStyle\Diagnostics;
 final class ReadableLayoutTest extends TestCase
 {
 
+	public function testCompletedBlocksSeparateTheNextStatement(): void
+	{
+		foreach([
+			"foreach(\$items as \$item)\n{\n\tstep(\$item);\n}"
+			, "for(\$i = 0; \$i < 3; \$i++)\n{\n\tstep(\$i);\n}"
+			, "while(\$ready)\n{\n\tstep();\n}"
+			, "do\n{\n\tstep();\n}\nwhile(\$ready);"
+			, "switch(\$value)\n{\n\tdefault:\n\t\tbreak;\n}"
+			, "try\n{\n\tstep();\n}\ncatch(\\Throwable \$e)\n{\n\trecover();\n}"
+			, "function work()\n{\n\tstep();\n}"
+			, "class Worker\n{\n\tfunction work()\n\t{\n\t\tstep();\n\t}\n}"
+			, "\$work = function() {\n\tstep();\n};"
+			, "consume(function() {\n\tstep();\n});"
+			, "declare(ticks=1)\n{\n\tstep();\n}"
+			, 'function short(){ return 1; }'
+		] as $block
+		){
+			$output = $this->format("<?php\n$block\nafter();\n");
+			self::assertStringEndsWith("\n\nafter();\n", $output, $block);
+		}
+	}
+
+	public function testNestedClosingRunsArePreservedAndSeparateTheNextStatement(): void
+	{
+		foreach(['}}', '} }', '}}}'] as $closes)
+		{
+			$extra = $closes === '}}}' ? "\t\twhile(\$ready)\n\t\t{\n" : '';
+			$indent = $closes === '}}}' ? "\t\t" : "\t";
+			$input = "<?php\nforeach(\$items as \$item)\n{\n\tif(\$item)\n\t{\n"
+				. $extra . $indent . "\tstep(\$item);\n" . $indent . "$closes after();\n";
+			$output = $this->format($input);
+			self::assertStringContainsString($indent . "$closes\n\nafter();\n", $output);
+		}
+
+		$output = $this->format(<<<'PHP'
+<?php
+function work()
+{
+	while($ready)
+	{
+		if(check())
+		{
+			step();
+		}}
+}
+after();
+
+PHP
+		);
+		self::assertStringContainsString("\t\t}}\n}\n\nafter();", $output);
+	}
+
+	public function testClosingRunsKeepConnectedClausesAttached(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+if($ready)
+{
+	while($pending)
+	{
+		step();
+	}} else
+{
+	recover();
+}
+try
+{
+	while($pending)
+	{
+		step();
+	}}
+catch(\Throwable $error)
+{
+	recover();
+}
+finally
+{
+	cleanup();
+}
+do
+{
+	while($pending)
+	{
+		step();
+	}}
+while($ready);
+after();
+
+PHP
+		);
+		self::assertStringContainsString("\t}} else", $output);
+		self::assertStringContainsString("\t}}\ncatch", $output);
+		self::assertStringContainsString("}\nfinally", $output);
+		self::assertStringContainsString("\t}}\nwhile(\$ready);\n\nafter();", $output);
+	}
+
+	public function testInlineTrailingCommentsStillSeparateTheNextStatement(): void
+	{
+		foreach(['/* Done. */', '/* Done. */ /* Also done. */'
+			, "/* Done.\n\nStill done. */"
+		] as $comment
+		){
+			$input = "<?php\nfunction work()\n{\n\twhile(\$ready)\n\t{\n\t\tstep();\n\t} "
+				. $comment . " after();\n}\n";
+			$output = $this->format($input);
+			self::assertStringContainsString("} $comment\n\n\tafter();", $output);
+		}
+	}
+
+	public function testBlockSpacingKeepsCommentsAttachedAndSeparatesClassMembers(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+while($ready)
+{
+	step();
+} // Done iterating.
+// Describe the next statement.
+after();
+class Worker
+{
+	function work()
+	{
+		step();
+	}
+	public $value = 1;
+}
+
+PHP
+		);
+		self::assertStringContainsString("} // Done iterating.\n\n// Describe", $output);
+		self::assertStringContainsString("Describe the next statement.\nafter();", $output);
+		self::assertStringContainsString("\t}\n\n\tpublic \$value", $output);
+	}
+
+	public function testBlockSpacingDoesNotChangeInlineHtml(): void
+	{
+		$input = "<?php\nwhile(\$ready)\n{\n\tstep();\n} ?>Rendered output";
+		$output = $this->format($input);
+		self::assertStringEndsWith('?>Rendered output', $output);
+	}
+
+	public function testExpressionBracesDoNotAddBlockSpacing(): void
+	{
+		$input = <<<'PHP'
+<?php
+$value = $object->{'name'};
+after();
+$value = "}} next();";
+after();
+$value = match($key) { default => 1 };
+after();
+
+PHP;
+		self::assertSame($input, $this->format($input));
+	}
+
 	public function testCreateRegression(): void
 	{
 		$output = $this->format(<<<'PHP'
@@ -45,6 +202,7 @@ class World
 		{
 			$this->add($id, $c);
 		}
+
 		return $id;
 	}
 }
@@ -72,7 +230,7 @@ PHP
 		);
 		self::assertStringContainsString("\n{\n\tif(\$component instanceof \$type)\n\t{", $output);
 		self::assertStringNotContainsString('{ unset', $output);
-		self::assertStringNotContainsString('} }', $output);
+		self::assertStringContainsString("} }\n\n\t\t\$this->emit", $output);
 	}
 
 	public function testOptionalBracesExpandAndMandatoryShortBodiesRemain(): void
@@ -384,7 +542,7 @@ PHP
 		self::assertStringContainsString("\$ready = \$item !== null;\n\n\t\t/** Keep", $output);
 		self::assertStringContainsString("}\n\t\telseif", $output);
 		self::assertStringContainsString("}\n\n\t\t// Keep processing", $output);
-		self::assertStringContainsString("\t}\n\treturn \$results;", $output);
+		self::assertStringContainsString("\t}\n\n\treturn \$results;", $output);
 		$this->format("<?php\n\$result = outer(\n\tinner(\n\t\t['value' => true] // keep\n\t));\n");
 	}
 
@@ -441,8 +599,10 @@ PHP
 			{
 				$fixer->fix(new \SplFileInfo(__FILE__), $tokens);
 			}
+
 			return $tokens->generateCode();
 		};
+
 		$output = $apply($input);
 		self::assertSame($output, $apply($output), 'Formatting must be idempotent.');
 

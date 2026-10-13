@@ -67,6 +67,7 @@ export default {
 				)
 			});
 		}
+
 		return {
 			ClassDeclaration: check, FunctionDeclaration: check, MethodDefinition: check
 			, TSDeclareFunction: check, TSAbstractMethodDefinition: check

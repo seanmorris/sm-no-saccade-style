@@ -49,6 +49,7 @@ final class ReadableLayout
 		{
 			$code = substr_replace($code, $text, $start, $end - $start);
 		}
+
 		return $code;
 	}
 
@@ -89,6 +90,7 @@ final class ReadableLayout
 				|| in_array($after, [')', ']', ',', '->', '?->', '::'], true);
 			$text .= $tight ? '' : ' ';
 		}
+
 		return trim($text);
 	}
 
@@ -154,6 +156,7 @@ final class ReadableLayout
 				$arguments[] = self::inline($tokens, $start, $index);
 				$start = $index + 1;
 			}
+
 			$arguments[] = self::inline($tokens, $start, $close);
 
 			if(in_array(null, $arguments, true) || in_array('', $arguments, true)) continue;
@@ -176,18 +179,71 @@ final class ReadableLayout
 			$replacements[$tokens[$open]->pos + 1] = [$tokens[$close]->pos, $body];
 			$covered = $tokens[$close]->pos;
 		}
+
 		return self::apply($code, $replacements);
+	}
+
+	/**
+	 * Recognize a final block through expression delimiters without mistaking data braces for code.
+	 *
+	 * @param Node $node Complete statement or class member whose final token is being inspected.
+	 * @param list<\PhpToken> $tokens Lexed source including whitespace and comments.
+	 * @param array<int,int> $positions Token indexes keyed by starting and ending byte offsets.
+	 * @param array<int,true> $blockEnds Byte offsets of closing braces belonging to code blocks.
+	 * @return bool Whether the statement ends with a block or a braced do/while construct.
+	 */
+	private static function endsWithBlock(Node $node, array $tokens, array $positions,
+		array $blockEnds
+	): bool
+	{
+		$trivia = [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT];
+
+		if($node instanceof Stmt\Do_)
+		{
+			$index = $positions[$node->getStartFilePos()] + 1;
+
+			while(in_array($tokens[$index]->id, $trivia, true)) $index++;
+
+			return $tokens[$index]->text === '{';
+		}
+
+		$index = $positions[$node->getEndFilePos()] ?? -1;
+
+		while($index >= 0 && $tokens[$index]->pos >= $node->getStartFilePos())
+		{
+			$token = $tokens[$index--];
+
+			if(in_array($token->id, $trivia, true)
+				|| in_array($token->text, [';', ')', ']'], true)
+			) continue;
+
+			return isset($blockEnds[$token->pos]);
+		}
+
+		return false;
 	}
 
 	public static function separateStatements(string $code): string
 	{
 		$ast = (new ParserFactory())->createForNewestSupportedVersion()->parse($code) ?? [];
 		$groups = [$ast];
+		$blockEnds = $positions = [];
+		$tokens = \PhpToken::tokenize($code, TOKEN_PARSE);
 
-		self::walk($ast, static function(Node $node) use (&$groups): void {
+		foreach($tokens as $index => $token)
+		{
+			$positions[$token->pos] = $positions[$token->pos + strlen($token->text) - 1] = $index;
+		}
+
+		self::walk($ast, static function(Node $node) use (&$groups, &$blockEnds, $code): void {
 			if(isset($node->stmts) && $node->getStartLine() !== $node->getEndLine())
 				$groups[] = $node->stmts;
+
+			if((isset($node->stmts) || $node instanceof Stmt\Switch_)
+				&& $code[$node->getEndFilePos()] === '}'
+			) $blockEnds[$node->getEndFilePos()] = true;
 		});
+
 		$replacements = [];
 
 		foreach($groups as $statements)
@@ -196,6 +252,9 @@ final class ReadableLayout
 			{
 				$previous = $statements[$index - 1];
 				$current = $statements[$index];
+
+				if($current instanceof Stmt\InlineHTML) continue;
+
 				$control = $current instanceof Stmt\If_ || $current instanceof Stmt\For_
 					|| $current instanceof Stmt\Foreach_ || $current instanceof Stmt\While_
 					|| $current instanceof Stmt\Do_ || $current instanceof Stmt\Switch_
@@ -210,7 +269,9 @@ final class ReadableLayout
 					});
 				}
 
-				if(!$control && !$multilineCall && !$previous instanceof Stmt\If_) continue;
+				if(!$control && !$multilineCall && !$previous instanceof Stmt\If_
+					&& !self::endsWithBlock($previous, $tokens, $positions, $blockEnds)
+				) continue;
 
 				$start = $current->getStartFilePos();
 
@@ -219,24 +280,35 @@ final class ReadableLayout
 					if($comment->getStartLine() > $previous->getEndLine())
 						$start = min($start, $comment->getStartFilePos());
 				}
+
 				$left = $previous->getEndFilePos() + 1;
+				$before = ($positions[$start] ?? 0) - 1;
+
+				while($before >= 0 && $tokens[$before]->id === T_WHITESPACE) $before--;
+
+				if($before >= 0 && $tokens[$before]->pos >= $left)
+					$left = $tokens[$before]->pos + strlen($tokens[$before]->text);
+
 				$gap = substr($code, $left, $start - $left);
 
 				if(preg_match('/\n[\t ]*\n/', $gap)) continue;
 
-				if(trim($gap) !== '')
-				{
-					$left = strrpos(substr($code, 0, $start), "\n") + 1;
+				$line = strrpos(substr($code, 0, $start), "\n");
 
-					if($left <= $previous->getEndFilePos()) continue;
+				$prefix = substr(
+					$code
+					, $line === false ? 0 : $line + 1
+					, $start - ($line === false ? 0 : $line + 1)
+				);
 
-					$replacements[$left] = [$left, "\n"];
-					continue;
-				}
-
-				$replacements[$left] = [$start, "\n\n" . self::indent($code, $start)];
+				$indent = self::indent(
+					$code
+					, trim($prefix) === '' ? $start : $previous->getStartFilePos()
+				);
+				$replacements[$left] = [$start, "\n\n" . $indent];
 			}
 		}
+
 		return self::apply($code, $replacements);
 	}
 }

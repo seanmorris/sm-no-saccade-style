@@ -34,6 +34,7 @@ export default {
 						if(!prefix.trim() && !suffix.trim()) ignored.add(line);
 					}
 				}
+
 				let start = 0;
 				let count = 0;
 
@@ -53,6 +54,7 @@ export default {
 
 					count++;
 				});
+
 				flush();
 			}
 		};

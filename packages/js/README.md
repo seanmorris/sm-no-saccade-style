@@ -161,7 +161,7 @@ This section describes how to lay out code so it already matches the formatter a
 
 ### Statement groups and long calls
 
-Keep related assignments together. Insert a blank line before a following control statement, after a conditional, and before a multiline call statement. Leading comments stay with their statements. Directly nested controls and a loop followed by a return stay together.
+Keep related assignments together. Insert a blank line before a following control statement or multiline call, and after a completed block. This includes a nested closing run such as `}}` and a callback ending in `});`. Do not insert a blank line before another closing brace or an attached `else`, `elseif` (PHP), `catch`, `finally`, or `do…while` clause. Leading comments stay with their statements, and trailing comments stay with their closing braces. Directly nested controls stay together.
 
 Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
 
@@ -387,7 +387,7 @@ const config = {
 };
 ```
 
-Do not stack closing delimiters from different indentation rails on the same line when they belong to different openings.
+Do not stack closing delimiters from different indentation rails on the same line when they belong to different openings. Nested block braces are the exception: existing runs such as `}}` and `} }` stay together at the first closing brace's indentation. A closing run still needs a blank line before the next statement, unless another `}` or an attached clause follows. Object, array, and call delimiters keep their own indentation rails.
 
 ```js
 const loadSlices = layers.map(
@@ -436,7 +436,7 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 ## Rules
 
 - `sm-no-saccade-style/statement-spacing`
-  Separates control flow and multiline call statements from preceding work, and separates conditionals from following statements. Comments stay attached to their statements; nested control chains and loop-to-return transitions stay together.
+  Separates control flow and multiline call statements from preceding work, and completed blocks from following statements. This includes nested closing runs and callback blocks. Comments stay attached; connected clauses, directly nested controls, and consecutive closing braces stay together.
 - `sm-no-saccade-style/separator-spacing`
   Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `sm-no-saccade-style/declaration-spacing`

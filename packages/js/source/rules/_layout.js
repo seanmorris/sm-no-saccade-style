@@ -1,5 +1,15 @@
 export const DEFAULT_MAX_LENGTH = 100;
 
+const BLOCK_TYPES = new Set(
+	['BlockStatement', 'ClassBody', 'SwitchStatement', 'StaticBlock', 'TSModuleBlock']
+);
+
+export function isBlockClose(token, sourceCode)
+{
+	return token?.value === '}'
+		&& BLOCK_TYPES.has(sourceCode.getNodeByRangeIndex(token.range[0])?.type);
+}
+
 export function columns(text, tabWidth = 4)
 {
 	let column = 0;
@@ -8,6 +18,7 @@ export function columns(text, tabWidth = 4)
 	{
 		column += character === '\t' ? tabWidth - column % tabWidth : 1;
 	}
+
 	return column;
 }
 

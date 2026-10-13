@@ -67,6 +67,7 @@ export default {
 						, fix: fixer => fixer.replaceTextRange(layout.range, layout.text)
 					});
 				}
+
 				const excluded = new Set();
 
 				if(ignoreLiterals)

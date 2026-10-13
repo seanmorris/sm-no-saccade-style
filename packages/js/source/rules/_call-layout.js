@@ -73,6 +73,7 @@ export function callLayout(source, node, max, tabWidth)
 		current += gap + text;
 		previous = token;
 	}
+
 	argumentsText.push(current.trim());
 
 	if(argumentsText.some(text => !text)) return null;

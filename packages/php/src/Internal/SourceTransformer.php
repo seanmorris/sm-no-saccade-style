@@ -75,6 +75,7 @@ final class SourceTransformer
 
 			if($code === $before) break;
 		}
+
 		return $code;
 	}
 
@@ -111,6 +112,7 @@ final class SourceTransformer
 				}
 			}
 		}
+
 		$replacements = [];
 
 		foreach($byLine as $line => $candidates)
@@ -157,6 +159,7 @@ final class SourceTransformer
 				$start = $right;
 			}
 		}
+
 		return self::applyReplacements($code, $replacements);
 	}
 
@@ -324,6 +327,7 @@ final class SourceTransformer
 				. $indent
 			];
 		}
+
 		return self::applyReplacements($code, $replacements);
 	}
 
@@ -426,6 +430,7 @@ final class SourceTransformer
 
 			$compact[$open] = $close;
 		}
+
 		return $compact;
 	}
 
@@ -451,6 +456,7 @@ final class SourceTransformer
 				, "\n"
 			];
 		};
+
 		$visible = [];
 
 		foreach($tokens as $index => $token)
@@ -484,7 +490,9 @@ final class SourceTransformer
 				$open = $pairs[$index];
 				array_pop($stack);
 
-				if($token->text === '}' && !isset($compact[$open]) && $previous !== null) $separate(
+				if($token->text === '}' && !isset($compact[$open]) && $previous !== null
+					&& $tokens[$previous]->text !== '}'
+				) $separate(
 					$previous
 					, $index
 				);
@@ -497,7 +505,7 @@ final class SourceTransformer
 					)
 					&& !in_array(
 						$tokens[$next]->id
-						, [T_ELSE, T_ELSEIF, T_CATCH, T_FINALLY, T_WHILE]
+						, [T_ELSE, T_ELSEIF, T_CATCH, T_FINALLY, T_WHILE, T_COMMENT, T_DOC_COMMENT]
 						, true
 					)
 				) $separate($index, $next);
@@ -517,6 +525,7 @@ final class SourceTransformer
 				)
 			) $separate($index, $next);
 		}
+
 		return self::applyReplacements($code, array_values($replacements));
 	}
 
@@ -2361,6 +2370,7 @@ final class SourceTransformer
 
 			$replacements[] = [$start, $closing->pos, "\n" . $indent];
 		}
+
 		return self::applyReplacements($code, $replacements);
 	}
 

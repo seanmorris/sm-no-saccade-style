@@ -28,6 +28,7 @@ final class LeadingCommaListsFixer extends AbstractNoSaccadeFixer
 
 			if($code === $before) break;
 		}
+
 		return $code;
 	}
 }

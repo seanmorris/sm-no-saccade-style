@@ -2,7 +2,7 @@ import stylistic from '@stylistic/eslint-plugin';
 
 import { composeListeners, withOptions, withReportFilter } from './_compose.js';
 import { indentOptions } from './_indent-options.js';
-import { canCompactBody, DEFAULT_MAX_LENGTH } from './_layout.js';
+import { canCompactBody, DEFAULT_MAX_LENGTH, isBlockClose } from './_layout.js';
 
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
@@ -285,6 +285,7 @@ export default {
 		{
 			return blockIndents.get(token.range[0]) ?? getTokenLineIndent(sourceCode, token);
 		}
+
 		const chainedCallbackBodyRanges = collectChainedCallbackBodyRanges(sourceCode.ast);
 
 		const filteredIndentContext = withOptions(
@@ -446,8 +447,11 @@ export default {
 
 				ranges.set(left.range[1], [left.range[1], right.range[0]]);
 			}
+
 			separate(open, sourceCode.getTokenAfter(open, { includeComments: true }));
-			separate(sourceCode.getTokenBefore(close, { includeComments: true }), close);
+			const previous = sourceCode.getTokenBefore(close, { includeComments: true });
+
+			if(!isBlockClose(previous, sourceCode)) separate(previous, close);
 
 			for(const child of children)
 			{
@@ -533,6 +537,10 @@ export default {
 				const expected = openingIndent(opening);
 				const range = [previous.range[1], token.range[0]];
 				const gap = sourceCode.text.slice(...range);
+
+				if(isBlockClose(token, sourceCode) && isBlockClose(previous, sourceCode)
+					&& !gap.includes('\n')
+				) continue;
 
 				const sameRail = pairs.has(
 					previous

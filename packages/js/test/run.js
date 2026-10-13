@@ -1,3 +1,4 @@
+import './block-boundaries.test.js';
 import './allman-tabs.test.js';
 import './allman-tabs.helpers.test.js';
 import './final-comma-line.test.js';

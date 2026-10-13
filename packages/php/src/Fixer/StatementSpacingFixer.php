@@ -21,7 +21,7 @@ final class StatementSpacingFixer extends AbstractNoSaccadeFixer
 
 	protected static function summary(): string
 	{
-		return 'Separates control flow and multiline calls from adjacent statements.';
+		return 'Separates completed blocks, controls and multiline calls from adjacent statements.';
 	}
 
 	protected function transform(string $code): string
