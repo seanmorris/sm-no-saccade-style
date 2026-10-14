@@ -1,7 +1,20 @@
 {
   "name": "sm-no-saccade-style-monorepo",
+  "version": "0.0.0",
   "private": true,
   "description": "Monorepo for the sm-no-saccade-style JavaScript and PHP linters.",
+  "exports": "./packages/js/index.js",
+  "files": [
+    "packages/js/package.json",
+    "packages/js/index.js",
+    "packages/js/source",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^2.11.0",
+    "@typescript-eslint/parser": "^8.46.2"
+  },
   "workspaces": [
     "packages/js"
   ],

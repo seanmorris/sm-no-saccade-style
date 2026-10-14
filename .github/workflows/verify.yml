@@ -85,6 +85,9 @@ jobs:
       - name: Verify npm package contents
         run: npm pack ./packages/js --dry-run
 
+      - name: Verify Git-install package contents
+        run: npm pack --dry-run
+
       - name: Pack npm package
         if: ${{ inputs.upload-npm-package }}
         run: |

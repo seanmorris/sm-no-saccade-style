@@ -39,6 +39,19 @@ This repository publishes two companion packages that enforce the same left-rail
 
 The shared style contract lives in [`docs/style-contract.md`](./docs/style-contract.md). Package-specific setup and examples live in each package README.
 
+### Installing an unreleased JavaScript commit
+
+Consumers can pin a tested Git commit while formatter changes await an npm release:
+
+```sh
+npm install --save-dev 'sm-no-saccade-style@git+https://github.com/seanmorris/sm-no-saccade-style.git#COMMIT_SHA'
+```
+
+Replace `COMMIT_SHA` with the full commit ID and commit the resulting lockfile.
+The private repository-root package exports the JavaScript workspace entry point
+and declares its runtime dependencies. It installs without a sibling checkout or
+a build step. The published npm package still comes from `packages/js`.
+
 ## Development
 
 Install JavaScript dependencies from the repository root:

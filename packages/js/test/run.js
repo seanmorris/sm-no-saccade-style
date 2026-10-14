@@ -9,3 +9,4 @@ import './no-space-control-paren.test.js';
 import './no-trailing-whitespace.test.js';
 import './recommended-config.test.js';
 import './readable-layout.test.js';
+import './parameter-layout.test.js';

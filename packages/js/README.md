@@ -153,6 +153,23 @@ export default [
 
 Set `ignoreLiterals: false` on `max-line-length` to report long literal lines too. The formatter still leaves literal contents unchanged.
 
+To require a consistent layout within each parameter or argument list, enable
+`sm-no-saccade-style/parameter-layout`. Once a list has a break between items,
+every item starts on its own line below the opening parenthesis, using leading
+commas. An explicitly expanded list stays expanded even when it would fit inline.
+Multiline callback bodies and literal contents remain intact. A callback body
+alone does not force the surrounding argument list to expand.
+
+```js
+{
+    rules: {
+        'sm-no-saccade-style/parameter-layout': ['error', { max: 120 }],
+        'sm-no-saccade-style/max-line-length': ['error', { max: 120 }],
+        'sm-no-saccade-style/allman-tabs': ['error', { maxLineLength: 120 }],
+    },
+}
+```
+
 Classes, functions, and methods have a blank line before their declaration. Attached JSDoc and decorators stay with the declaration; the blank line goes before them. The same applies to the first class method, object methods, and assigned functions. Inline callback expressions stay with their enclosing expression.
 
 ## Style Guide
