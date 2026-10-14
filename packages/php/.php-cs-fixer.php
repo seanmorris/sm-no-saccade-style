@@ -7,7 +7,10 @@ $finder = PhpCsFixer\Finder::create()
 		__DIR__ . '/src'
 		, __DIR__ . '/tests'
 	])
-	->append([__DIR__ . '/bin/sm-no-saccade-style'])
+	->append([
+		__DIR__ . '/bin/sm-no-saccade-style'
+		, dirname(__DIR__, 2) . '/scripts/package-smoke.php'
+	])
 ;
 
 return SeanMorris\NoSaccadeStyle\ConfigFactory::recommended($finder)->setUsingCache(false);

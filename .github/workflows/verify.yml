@@ -82,17 +82,8 @@ jobs:
         if: ${{ inputs.upload-coverage && env.CODECOV_TOKEN == '' }}
         run: echo "CODECOV_TOKEN is not configured; skipping Codecov upload."
 
-      - name: Verify npm package contents
-        run: npm pack ./packages/js --dry-run
-
-      - name: Verify Git-install package contents
-        run: npm pack --dry-run
-
-      - name: Pack npm package
-        if: ${{ inputs.upload-npm-package }}
-        run: |
-          mkdir -p build/npm-package
-          npm pack ./packages/js --pack-destination build/npm-package --json
+      - name: Validate and smoke-test package archives
+        run: npm run verify:packages
 
       - name: Upload npm package
         if: ${{ inputs.upload-npm-package }}

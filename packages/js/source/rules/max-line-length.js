@@ -172,7 +172,8 @@ export default {
 						token => token.loc.start.line === index + 1
 							&& ['&&', '||', '??'].includes(token.value)
 								&& source.text.slice(start, token.range[0]).trim()
-									&& columns(source.text.slice(start, token.range[0])
+									&& columns(
+										source.text.slice(start, token.range[0])
 										, tabWidth
 									) <= max
 					);
@@ -185,10 +186,12 @@ export default {
 						)
 					)
 						.filter(
-							token => token.loc.start.line === index + 1 && columns(
-								source.text.slice(start, token.range[0])
-								, tabWidth
-							) <= max
+							token => token.loc.start.line === index + 1
+								&& source.text.slice(start, token.range[0]).trim()
+								&& columns(
+									source.text.slice(start, token.range[0])
+									, tabWidth
+								) <= max
 						);
 
 					// AST traversal visits enclosing expressions before nested call arguments.
@@ -200,6 +203,7 @@ export default {
 						)
 					).filter(
 						token => token.loc.start.line === index + 1
+							&& source.text.slice(start, token.range[0]).trim()
 							&& columns(source.text.slice(start, token.range[0]), tabWidth) <= max
 					).slice(0, 1);
 

@@ -511,7 +511,7 @@ final class SourceTransformer
 		{
 			$token = $tokens[$index];
 
-			if(isset($protected[$index])) continue;
+			if(isset($protected[$index]) || $token->id === T_INLINE_HTML) continue;
 
 			$previous = $visible[$position - 1] ?? null;
 			$next = $visible[$position + 1] ?? null;
@@ -558,7 +558,7 @@ final class SourceTransformer
 			)
 				&& !isset($compact[$parent]) && !in_array(
 					$tokens[$next]->id
-					, [T_COMMENT, T_DOC_COMMENT, T_CLOSE_TAG]
+					, [T_COMMENT, T_DOC_COMMENT, T_CLOSE_TAG, T_INLINE_HTML]
 					, true
 				)
 			) $separate($index, $next);
@@ -982,6 +982,8 @@ final class SourceTransformer
 		}
 
 		$commentRanges = [];
+		// Preserve inline HTML and halted-compiler payload bytes, including their boundaries.
+		$dataRanges = [];
 
 		foreach(self::tokens($code) as $token)
 		{
@@ -989,6 +991,9 @@ final class SourceTransformer
 			{
 				$commentRanges[] = [$token->pos, self::tokenEnd($token)];
 			}
+
+			if($token->id === T_INLINE_HTML)
+			$dataRanges[] = [$token->pos, self::tokenEnd($token)];
 		}
 
 		usort($replacements, static fn(array $left, array $right): int => $right[0] <=> $left[0]);
@@ -1000,6 +1005,8 @@ final class SourceTransformer
 			if($end > $maxEnd
 				|| $start > $end
 				|| self::rangeOverlapsAny($start, $end, $commentRanges)
+				|| self::rangeOverlapsAny($start, $end, $dataRanges)
+				|| ($start === $end && self::rangeInsideAny($start, $end, $dataRanges))
 			){
 				continue;
 			}

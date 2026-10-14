@@ -1,13 +1,18 @@
 import { columns } from './_layout.js';
 import { compactExpression } from './_compact-expression.js';
-import { controlBoundary } from './_expression-layout.js';
+import { conditionalLayout, controlBoundary } from './_expression-layout.js';
 
 /** Let a shared expression wrap before expanding a small call within it. */
-function sharedExpressionLine(source, node, line)
+function sharedExpressionLine(source, node, line, max, tabWidth)
 {
 	for(let parent = node.parent; parent; parent = parent.parent)
 	{
 		if(parent.type === 'BlockStatement') break;
+
+		if(parent.type === 'ConditionalExpression'
+			&& conditionalLayout(source, parent, max, tabWidth)
+		)
+		return true;
 
 		if(!['LogicalExpression', 'BinaryExpression'].includes(parent.type)) continue;
 
@@ -17,7 +22,11 @@ function sharedExpressionLine(source, node, line)
 			, token => token.value === parent.operator
 		);
 
-		if(operator?.loc.start.line === line) return true;
+		if(operator?.loc.start.line !== line) continue;
+
+		const prefix = source.lines[line - 1].slice(0, operator.loc.start.column);
+
+		if(prefix.trim() && columns(prefix, tabWidth) <= max) return true;
 	}
 
 	return false;
@@ -30,7 +39,7 @@ function expandedCall(source, node, opening, closing, max, tabWidth)
 
 	if(columns(line, tabWidth) <= max) return null;
 
-	if(sharedExpressionLine(source, node, opening.loc.start.line)) return null;
+	if(sharedExpressionLine(source, node, opening.loc.start.line, max, tabWidth)) return null;
 
 	const indent = line.match(/^[\t ]*/u)[0];
 	const edits = [];
@@ -200,7 +209,7 @@ export function callLayout(source, node, max, tabWidth)
 
 	if(inner[0].loc.start.line > opening.loc.start.line && !closingPrefix.trim()) return null;
 
-	if(sharedExpressionLine(source, node, opening.loc.start.line)) return null;
+	if(sharedExpressionLine(source, node, opening.loc.start.line, max, tabWidth)) return null;
 
 	const text = `\n${indent}\t${argumentsText.join(`\n${indent}\t, `)}\n${indent}`;
 
