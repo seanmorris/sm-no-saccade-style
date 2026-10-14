@@ -15,6 +15,11 @@ final class AllmanTabsFixer extends AbstractNoSaccadeFixer implements Configurab
 {
 	use ConfigurableFixerTrait;
 
+	public function getPriority(): int
+	{
+		return -5;
+	}
+
 	protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
 	{
 		return new FixerConfigurationResolver(

@@ -257,9 +257,7 @@ export default {
 				previousToken
 				, openingBrace
 				, { includeComments: true }
-			).some(
-				(token) => token.type === 'Block' || token.type === 'Line'
-			);
+			).some((token) => token.type === 'Block' || token.type === 'Line');
 
 			const inlineBody = isInlineBody(node);
 			const emptyBody = isEmptyBody(node);
@@ -514,11 +512,8 @@ export default {
 					&& !gap.includes('\n')
 				) continue;
 
-				const sameRail = pairs.has(
-					previous
-				) && openingIndent(
-					pairs.get(previous)
-				) === expected;
+				const sameRail = pairs.has(previous)
+					&& openingIndent(pairs.get(previous)) === expected;
 
 				if(sameRail && !gap.includes('\n')) continue;
 

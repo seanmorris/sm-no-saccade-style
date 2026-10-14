@@ -34,6 +34,7 @@ final class ConfigFactory
 					, Fixers::SEPARATOR_SPACING => true, Fixers::STATEMENT_SPACING => true
 					, 'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line']
 					, 'semicolon_after_instruction' => true, 'single_blank_line_at_eof' => true
+					, 'concat_space' => ['spacing' => 'one']
 				]
 			)
 			->setFinder($finder);

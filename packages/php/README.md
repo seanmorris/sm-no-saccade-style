@@ -269,6 +269,10 @@ This section describes how to lay out PHP so it already matches the formatter an
 
 Keep related assignments together. Insert a blank line before a following control statement or multiline call, and after a completed block. This includes a nested closing run such as `}}` and a callback ending in `});`. Do not insert a blank line before another closing brace or an attached `else`, `elseif` (PHP), `catch`, `finally`, or `do…while` clause. Leading comments stay with their statements, and trailing comments stay with their closing braces. Directly nested controls stay together.
 
+Separate completed multiline expressions, including constructor calls, from the next statement. A return after preceding work also gets a blank line. Short comment-free calls compact when the complete call fits the configured limit; expanded arrays, comments, and literal contents stay intact.
+
+Separate an outer unbraced control header from its body before wrapping the body's call or short subexpressions. Stacked control headers and bodies share an indentation level. Existing braces remain in place.
+
 Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
 
 ```php
@@ -282,6 +286,8 @@ The separate warning for runs longer than 10 lines still asks for human judgment
 ### Parameters, calls, and loop headers
 
 Use one space after commas in function definitions and calls, and after semicolons in `for` headers. This also covers methods, closures, arrow functions, and constructor calls. Multiline headers keep their line breaks; no trailing spaces are added.
+
+An expanded parameter list puts every parameter on its own line, including the first, with leading commas and an aligned closing parenthesis. Calls use either a complete inline list or consistent vertical argument boundaries; multiline callback bodies alone do not force every argument onto a separate line.
 
 ```php
 function add($left, $right){ return $left + $right; }
@@ -385,6 +391,8 @@ $services = [
 
 ### Continuation operators
 
+Put spaces around the concatenation operator: `$prefix . $name`. The recommended preset enables PHP-CS-Fixer's `concat_space` rule with `spacing: one`.
+
 Put multiline continuation operators at the beginning of the continued line.
 
 ```php
@@ -407,7 +415,7 @@ $value = $provided
 	?? $fallback;
 ```
 
-Ternary markers also lead the continued line.
+Keep short ternaries inline. When a ternary spans multiple lines, both `?` and `:` lead equally indented continuation lines. Partially wrapped ternaries compact when they fit, or expand both branches. Nullable types, named arguments, and the shorthand `?:` retain their meaning.
 
 ```php
 <?php
@@ -470,6 +478,12 @@ final class Scene
 ```
 
 Closures and arrow functions keep their opening brace or expression on the same line as the head.
+
+For multiline function signatures with return types, the brace follows the complete closing signature: `): Result {`.
+
+Place a closure's PHPDoc above its complete assignment, and keep `$callback = function...` together when the head fits. This avoids indenting the entire closure as an assignment continuation. Documentation between `=` and a standalone closure is moved above the assignment without changing its contents.
+
+The companion linter warns about directly passed, documented multiline callbacks with `documented-callback`. It suggests assigning a descriptive local variable first. It does not perform that refactoring or invent variable names.
 
 ```php
 <?php
@@ -598,7 +612,7 @@ Avoid trailing spaces and tabs outside strings, keep one final newline at the en
 ## Rules
 
 - `SeanMorris/no_saccade_statement_spacing`
-  Separates control flow and multiline call statements from preceding work, and completed blocks from following statements. This includes nested closing runs and callback blocks. Comments stay attached; connected clauses, directly nested controls, and consecutive closing braces stay together.
+  Separates control flow and multiline call statements from preceding work, and completed blocks and multiline expressions from following statements. A return after preceding work gets a blank line. Comments stay attached; connected clauses, directly nested controls, and consecutive closing braces stay together.
 - `SeanMorris/no_saccade_separator_spacing`
   Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
 - `SeanMorris/no_saccade_declaration_spacing`

@@ -76,10 +76,10 @@ const args = await format(`call(first, ((second))
 `
 );
 
-assert.match(args, /call\(\n\tfirst\n\t, \(\(second\)\)\n\t, third\n\);/u);
+assert.equal(args, 'call(first, ((second)), third);\n');
 
 const grouped = await format('call(\n\tfirst, second\n);\n');
-assert.equal(grouped, 'call(\n\tfirst\n\t, second\n);\n');
+assert.equal(grouped, 'call(first, second);\n');
 
 const comments = await format(`call(first, // Describe the second argument.
 	second,
@@ -107,7 +107,7 @@ const expression = await format(`const state = page => page.evaluate(canvas =>
 `
 );
 
-assert.match(expression, /JSON\.parse\(canvas\.dataset\.state \?\? 'null'\)\n\);/u);
+assert.match(expression, /JSON\.parse\(canvas\.dataset\.state \?\? 'null'\)\);/u);
 
 const literal = await format('await run(page, `<?php\n  echo "unchanged";\n`);\n');
 assert.ok(literal.includes('`<?php\n  echo "unchanged";\n`'));
@@ -137,4 +137,4 @@ const defaults = new ESLint({
 
 const [defaulted] = await defaults.lintText('work(first,\nsecond);\n', {filePath: 'defaults.js'});
 assert.equal(defaulted.errorCount, 0);
-assert.equal(defaulted.output, 'work(\n\tfirst\n\t, second\n);\n');
+assert.equal(defaulted.output, 'work(first, second);\n');

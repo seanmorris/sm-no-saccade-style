@@ -17,11 +17,13 @@ function getParenToken(sourceCode, node)
 
 	if(node.type === 'CatchClause')
 	{
-		return node.param ? sourceCode.getFirstTokenBetween(
-			sourceCode.getFirstToken(node)
-			, node.param
-			, (token) => token.value === '('
-		) : null;
+		return node.param
+			? sourceCode.getFirstTokenBetween(
+				sourceCode.getFirstToken(node)
+				, node.param
+				, (token) => token.value === '('
+			)
+			: null;
 	}
 
 	if(node.type === 'DoWhileStatement')

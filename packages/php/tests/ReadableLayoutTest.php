@@ -44,6 +44,7 @@ final class ReadableLayoutTest extends TestCase
 			$indent = $closes === '}}}' ? "\t\t" : "\t";
 			$input = "<?php\nforeach(\$items as \$item)\n{\n\tif(\$item)\n\t{\n"
 				. $extra . $indent . "\tstep(\$item);\n" . $indent . "$closes after();\n";
+
 			$output = $this->format($input);
 			self::assertStringContainsString($indent . "$closes\n\nafter();\n", $output);
 		}
@@ -63,6 +64,7 @@ after();
 
 PHP
 		);
+
 		self::assertStringContainsString("\t\t}}\n}\n\nafter();", $output);
 	}
 
@@ -104,6 +106,7 @@ after();
 
 PHP
 		);
+
 		self::assertStringContainsString("\t}} else", $output);
 		self::assertStringContainsString("\t}}\ncatch", $output);
 		self::assertStringContainsString("}\nfinally", $output);
@@ -118,6 +121,7 @@ PHP
 		){
 			$input = "<?php\nfunction work()\n{\n\twhile(\$ready)\n\t{\n\t\tstep();\n\t} "
 				. $comment . " after();\n}\n";
+
 			$output = $this->format($input);
 			self::assertStringContainsString("} $comment\n\n\tafter();", $output);
 		}
@@ -144,6 +148,7 @@ class Worker
 
 PHP
 		);
+
 		self::assertStringContainsString("} // Done iterating.\n\n// Describe", $output);
 		self::assertStringContainsString("Describe the next statement.\nafter();", $output);
 		self::assertStringContainsString("\t}\n\n\tpublic \$value", $output);
@@ -168,6 +173,7 @@ $value = match($key) { default => 1 };
 after();
 
 PHP;
+
 		self::assertSame($input, $this->format($input));
 	}
 
@@ -228,6 +234,7 @@ foreach($this->entities[$id] as $class => $component)
 
 PHP
 		);
+
 		self::assertStringContainsString("\n{\n\tif(\$component instanceof \$type)\n\t{", $output);
 		self::assertStringNotContainsString('{ unset', $output);
 		self::assertStringContainsString("} }\n\n\t\t\$this->emit", $output);
@@ -277,6 +284,7 @@ PHP
 			"\$value = 1;\n\n/** Describes the class. */\n#[Example]"
 			, $output
 		);
+
 		self::assertStringContainsString("{\n\n\t/** Describes the method. */", $output);
 		self::assertStringContainsString("\n\n\tpublic function next()", $output);
 	}
@@ -323,6 +331,7 @@ $config = [
 
 PHP
 		);
+
 		self::assertSame(1, substr_count($output, "'schema'"));
 	}
 
@@ -373,6 +382,7 @@ PHP
 				__DIR__ . '/../bin/sm-no-saccade-style'
 			)
 				. ' ' . escapeshellarg($file);
+
 			exec($command, $output, $status);
 			self::assertSame(0, $status);
 			self::assertCount(1, $output);
@@ -382,6 +392,7 @@ PHP
 				'warning [max-unseparated-lines]'
 				, implode("\n", $output)
 			);
+
 			self::assertSame($code, file_get_contents($file));
 			file_put_contents($file, "<?php\ncall(" . str_repeat('a', 94) . ");\n");
 			$output = [];
@@ -413,6 +424,7 @@ combine($first,   $second);
 
 PHP
 		);
+
 		self::assertStringContainsString('combine($first, $second = 2, ...$rest)', $output);
 		self::assertStringContainsString('run($first, $second)', $output);
 
@@ -420,6 +432,7 @@ PHP
 			'fn($first, $second) => combine($first, $second)'
 			, $output
 		);
+
 		self::assertStringContainsString('use ($left, $right)', $output);
 		self::assertStringContainsString('new Worker(1, 2)', $output);
 		self::assertStringContainsString('run(1, /* keep the argument comment */2)', $output);
@@ -453,6 +466,7 @@ for($i = 0;/* keep the loop comment */$i < 3;$i++){ useValue($i); }
 
 PHP
 		);
+
 		self::assertStringContainsString('for($i = 0; $i < 3; $i++)', $output);
 		self::assertStringContainsString('for(; ;)', $output);
 		self::assertStringContainsString('for(; $ready;)', $output);
@@ -476,7 +490,9 @@ function combine(
 }
 
 PHP;
-		self::assertSame($input, $this->format($input));
+
+		$expected = str_replace("run(\$first\n\t\t, \$second\n\t)", 'run($first, $second)', $input);
+		self::assertSame($expected, $this->format($input));
 	}
 
 	public function testObjectSpawnerUsesStatementGroupsAndCompleteArguments(): void
@@ -496,6 +512,7 @@ $result = outer(
 			'value' => true]));
 
 PHP;
+
 		$expected = <<<'PHP'
 <?php
 $result = outer(
@@ -507,6 +524,7 @@ $result = outer(
 );
 
 PHP;
+
 		self::assertSame($expected, $this->format($input));
 	}
 
@@ -538,6 +556,7 @@ function work($items)
 
 PHP
 		);
+
 		self::assertStringContainsString("\$results = [];\n\n\t// Filter", $output);
 		self::assertStringContainsString("\$ready = \$item !== null;\n\n\t\t/** Keep", $output);
 		self::assertStringContainsString("}\n\t\telseif", $output);
@@ -554,6 +573,7 @@ $someLongResultName = new ExampleFactory(argument: transform($firstLongParameter
 
 PHP
 		);
+
 		self::assertStringContainsString("new ExampleFactory(\n\targument: transform(", $output);
 		self::assertStringContainsString("\$secondLongParameterName)\n);", $output);
 	}
@@ -621,6 +641,7 @@ PHP
 			, $tokens($output)
 			, 'Executable tokens and comments must survive.'
 		);
+
 		return $output;
 	}
 }

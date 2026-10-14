@@ -387,6 +387,7 @@ function strings($name)
 PHP
 			, $once
 		);
+
 		$this->assertSame($once, $this->apply(new AllmanTabsFixer(), $once));
 	}
 
@@ -445,15 +446,12 @@ PHP
 		);
 	}
 
-	public function testRecommendedCustomFixersUseLeadingCommasInVerticalCallArguments(): void
+	public function testRecommendedCustomFixersCompactShortVerticalCalls(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
 <?php
-fwrite(STDERR, sprintf(
-	"Timed out waiting for: %s\n"
-	, implode(', ', array_keys($services))
-));
+fwrite(STDERR, sprintf("Timed out waiting for: %s\n", implode(', ', array_keys($services))));
 
 PHP
 			, $this->applyMany(
@@ -965,6 +963,7 @@ $ready = $loaded /* before operator */ &&
 	$valid;
 
 PHP;
+
 		$once = $this->applyMany($this->recommendedCustomFixers(), $input);
 
 		$this->assertSame($this->commentTexts($input), $this->commentTexts($once));

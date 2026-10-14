@@ -11,3 +11,4 @@ import './recommended-config.test.js';
 import './readable-layout.test.js';
 import './parameter-layout.test.js';
 import './expression-layout.test.js';
+import './conditional-layout.test.js';

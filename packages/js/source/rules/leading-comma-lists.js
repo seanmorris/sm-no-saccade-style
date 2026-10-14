@@ -223,13 +223,8 @@ export default {
 
 			const alignmentEntries = entries.filter(
 				(entry) => entry.colonToken.loc.end.line === entry.valueToken.loc.start.line
-					&& /^[\t ]*$/u.test(
-						entry.afterText
-					) && !hasCommentsBetween(
-					sourceCode
-					, entry.colonToken
-					, entry.valueToken
-					)
+					&& /^[\t ]*$/u.test(entry.afterText)
+						&& !hasCommentsBetween(sourceCode, entry.colonToken, entry.valueToken)
 			);
 
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
@@ -292,7 +287,8 @@ export default {
 				context.report({
 					node: entry.property
 					, loc: entry.colonToken.loc
-					, messageId: shouldAlign ? 'expectedAlignedObjectColonValue'
+					, messageId: shouldAlign
+						? 'expectedAlignedObjectColonValue'
 						: 'expectedSpaceAfterObjectColon'
 					, fix: (fixer) => buildObjectColonAfterFix(
 						fixer
@@ -363,13 +359,8 @@ export default {
 
 			const alignmentEntries = entries.filter(
 				(entry) => entry.leftToken.loc.end.line === entry.equalsToken.loc.start.line
-					&& /^[\t ]*$/u.test(
-						entry.beforeText
-					) && !hasCommentsBetween(
-					sourceCode
-					, entry.leftToken
-					, entry.equalsToken
-					)
+					&& /^[\t ]*$/u.test(entry.beforeText)
+						&& !hasCommentsBetween(sourceCode, entry.leftToken, entry.equalsToken)
 			);
 
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
@@ -407,7 +398,8 @@ export default {
 						context.report({
 							node: entry.property
 							, loc: entry.equalsToken.loc
-							, messageId: shouldAlign ? 'expectedAlignedClassPropertyEquals'
+							, messageId: shouldAlign
+								? 'expectedAlignedClassPropertyEquals'
 								: 'expectedSpaceBeforeClassPropertyEquals'
 							, fix: (fixer) => buildClassPropertyEqualsBeforeFix(
 								fixer

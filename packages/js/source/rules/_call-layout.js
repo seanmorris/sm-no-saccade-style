@@ -1,5 +1,27 @@
 import { columns } from './_layout.js';
 import { compactExpression } from './_compact-expression.js';
+import { controlBoundary } from './_expression-layout.js';
+
+/** Let a shared expression wrap before expanding a small call within it. */
+function sharedExpressionLine(source, node, line)
+{
+	for(let parent = node.parent; parent; parent = parent.parent)
+	{
+		if(parent.type === 'BlockStatement') break;
+
+		if(!['LogicalExpression', 'BinaryExpression'].includes(parent.type)) continue;
+
+		const operator = source.getFirstTokenBetween(
+			parent.left
+			, parent.right
+			, token => token.value === parent.operator
+		);
+
+		if(operator?.loc.start.line === line) return true;
+	}
+
+	return false;
+}
 
 /** Expand only argument boundaries when callback bodies or comments must stay intact. */
 function expandedCall(source, node, opening, closing, max, tabWidth)
@@ -7,6 +29,8 @@ function expandedCall(source, node, opening, closing, max, tabWidth)
 	const line = source.lines[opening.loc.start.line - 1];
 
 	if(columns(line, tabWidth) <= max) return null;
+
+	if(sharedExpressionLine(source, node, opening.loc.start.line)) return null;
 
 	const indent = line.match(/^[\t ]*/u)[0];
 	const edits = [];
@@ -53,6 +77,8 @@ function expandedCall(source, node, opening, closing, max, tabWidth)
 
 export function callLayout(source, node, max, tabWidth)
 {
+	if(controlBoundary(source, node, max, tabWidth)) return null;
+
 	const tokens = source.getTokens(node);
 	const closing = tokens.at(-1);
 
@@ -91,8 +117,6 @@ export function callLayout(source, node, max, tabWidth)
 		0
 		, closing.loc.start.column
 	);
-
-	if(inner[0].loc.start.line > opening.loc.start.line && !closingPrefix.trim()) return null;
 
 	if(node.arguments.some(argument => compactExpression(source, argument) === null)
 		|| inner.some(token => ['Block', 'Line'].includes(token.type))
@@ -147,13 +171,44 @@ export function callLayout(source, node, max, tabWidth)
 	const head = line.slice(0, opening.loc.end.column);
 	const tail = source.lines[closing.loc.start.line - 1].slice(closing.loc.start.column);
 
-	if(columns(head + argumentsText.join(', ') + tail, tabWidth) <= max) return null;
+	if(columns(head + argumentsText.join(', ') + tail, tabWidth) <= max)
+	{
+		// Neighboring interpolations share one literal line; do not flatten them independently.
+		if(opening.loc.start.line !== closing.loc.start.line)
+		{
+			for(let parent = node.parent; parent; parent = parent.parent)
+			{
+				if(parent.type === 'TemplateLiteral') return null;
+
+				if(parent.type === 'BlockStatement') break;
+			}
+		}
+
+		const text = argumentsText.join(', ');
+
+		if(source.text.slice(opening.range[1], closing.range[0]) === text) return null;
+
+		return {
+			range: [opening.range[1], closing.range[0]]
+			, text
+			, startLine: opening.loc.start.line
+			, endLine: closing.loc.start.line
+		};
+	}
 
 	const indent = line.match(/^[\t ]*/u)[0];
 
+	if(inner[0].loc.start.line > opening.loc.start.line && !closingPrefix.trim()) return null;
+
+	if(sharedExpressionLine(source, node, opening.loc.start.line)) return null;
+
+	const text = `\n${indent}\t${argumentsText.join(`\n${indent}\t, `)}\n${indent}`;
+
+	if(source.text.slice(opening.range[1], closing.range[0]) === text) return null;
+
 	return {
 		range: [opening.range[1], closing.range[0]]
-		, text: `\n${indent}\t${argumentsText.join(`\n${indent}\t, `)}\n${indent}`
+		, text
 		, startLine: opening.loc.start.line
 		, endLine: closing.loc.start.line
 	};

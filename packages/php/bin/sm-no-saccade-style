@@ -20,6 +20,7 @@ if(isset($options['help']))
 		STDOUT
 		, "Usage: sm-no-saccade-style [--max-line-length=100] [--max-unseparated-lines=10] [--tab-width=4] [--no-ignore-literals] [files or directories...]\n"
 	);
+
 	exit(0);
 }
 
@@ -67,6 +68,7 @@ try
 				, $message['rule']
 				, $message['message']
 			);
+
 			fwrite(STDOUT, $text . "\n");
 
 			if($message['severity'] === 'error') $errors++;

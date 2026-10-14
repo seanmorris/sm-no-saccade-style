@@ -13,7 +13,7 @@ use SeanMorris\NoSaccadeStyle\Diagnostics;
 final class ReadableLayout
 {
 
-	private static function walk(array $nodes, callable $visit): void
+	public static function walk(array $nodes, callable $visit): void
 	{
 		foreach($nodes as $node)
 		{
@@ -34,14 +34,15 @@ final class ReadableLayout
 		return $node instanceof Expr\CallLike || $node instanceof Expr\New_;
 	}
 
-	private static function indent(string $code, int $position): string
+	public static function indent(string $code, int $position): string
 	{
 		$start = strrpos(substr($code, 0, $position), "\n");
 		preg_match('/^[\t ]*/', substr($code, $start === false ? 0 : $start + 1), $match);
+
 		return $match[0];
 	}
 
-	private static function apply(string $code, array $replacements): string
+	public static function apply(string $code, array $replacements): string
 	{
 		krsort($replacements);
 
@@ -54,7 +55,7 @@ final class ReadableLayout
 	}
 
 	/** Flatten whitespace in an argument without touching comments, blocks, or literal contents. */
-	private static function inline(array $tokens, int $start, int $end): ?string
+	public static function inline(array $tokens, int $start, int $end): ?string
 	{
 		$text = '';
 
@@ -62,12 +63,22 @@ final class ReadableLayout
 		{
 			$token = $tokens[$index];
 
+			if($token->id === ord('['))
+			{
+				$depth = 1;
+
+				for($close = $index + 1; $close < $end; $close++)
+				{
+					if($tokens[$close]->id === ord('[')) $depth++;
+
+					if($tokens[$close]->id === ord(']') && --$depth === 0) break;
+				}
+
+				if(isset($tokens[$close]) && $tokens[$close]->line !== $token->line) return null;
+			}
+
 			if($token->id === T_COMMENT || $token->id === T_DOC_COMMENT
-				|| $token->id === T_START_HEREDOC || in_array(
-					$token->text
-					, ['{', '}']
-					, true
-				)
+				|| $token->id === T_START_HEREDOC || in_array($token->text, ['{', '}'], true)
 			) return null;
 
 			if($token->id !== T_WHITESPACE)
@@ -88,6 +99,7 @@ final class ReadableLayout
 			$after = $tokens[$index + 1]->text;
 			$tight = in_array($before, ['(', '[', '->', '?->', '::'], true)
 				|| in_array($after, [')', ']', ',', '->', '?->', '::'], true);
+
 			$text .= $tight ? '' : ' ';
 		}
 
@@ -112,6 +124,7 @@ final class ReadableLayout
 			, static fn(Node $left, Node $right): int => $left->getStartFilePos() <=> $right
 				->getStartFilePos() ?: $right->getEndFilePos() <=> $left->getEndFilePos()
 		);
+
 		$replacements = [];
 		$covered = -1;
 
@@ -121,7 +134,7 @@ final class ReadableLayout
 			$open = $pairs[$close] ?? null;
 
 			if($open === null || $tokens[$open]->text !== '(' || $tokens[$open]->pos < $covered)
-				continue;
+			continue;
 
 			$first = $open + 1;
 
@@ -135,12 +148,8 @@ final class ReadableLayout
 				, $tokens[$close]->pos - (strrpos(substr($code, 0, $tokens[$close]->pos), "\n") + 1)
 			);
 
-			if($tokens[$first]->line > $tokens[$open]->line && trim(
-				$closingPrefix
-			) === ''
-			) continue;
-
 			$arguments = [];
+			$commas = [];
 			$start = $open + 1;
 
 			for($index = $start; $index < $close; $index++)
@@ -153,13 +162,14 @@ final class ReadableLayout
 
 				if($tokens[$index]->id !== ord(',')) continue;
 
+				$commas[] = $index;
 				$arguments[] = self::inline($tokens, $start, $index);
 				$start = $index + 1;
 			}
 
 			$arguments[] = self::inline($tokens, $start, $close);
 
-			if(in_array(null, $arguments, true) || in_array('', $arguments, true)) continue;
+			if(in_array('', $arguments, true)) continue;
 
 			$lineStart = strrpos(substr($code, 0, $tokens[$open]->pos), "\n");
 			$lineStart = $lineStart === false ? 0 : $lineStart + 1;
@@ -172,12 +182,86 @@ final class ReadableLayout
 				, ($lineEnd === false ? strlen($code) : $lineEnd) - $tokens[$close]->pos
 			);
 
-			if(Diagnostics::columns($head . implode(', ', $arguments) . $tail) <= $max) continue;
-
 			$indent = self::indent($code, $tokens[$open]->pos);
-			$body = "\n{$indent}\t" . implode("\n{$indent}\t, ", $arguments) . "\n{$indent}";
-			$replacements[$tokens[$open]->pos + 1] = [$tokens[$close]->pos, $body];
-			$covered = $tokens[$close]->pos;
+			$compact = !in_array(null, $arguments, true);
+
+			if($compact && Diagnostics::columns($head . implode(', ', $arguments) . $tail) <= $max)
+			{
+				$body = implode(', ', $arguments);
+
+				if(substr(
+					$code
+					, $tokens[$open]->pos + 1
+					, $tokens[$close]->pos - $tokens[$open]->pos - 1
+				) === $body
+				)
+				continue;
+
+				$replacements[$tokens[$open]->pos + 1] = [$tokens[$close]->pos, $body];
+				$covered = $tokens[$close]->pos;
+				continue;
+			}
+
+			if($compact)
+			{
+				if($tokens[$first]->line > $tokens[$open]->line && trim($closingPrefix) === '')
+				{
+					ExpressionLayout::listGaps(
+						$code
+						, $tokens
+						, $open
+						, $close
+						, $commas
+						, $indent
+						, $replacements
+					);
+
+					continue;
+				}
+
+				$body = "\n{$indent}\t" . implode("\n{$indent}\t, ", $arguments) . "\n{$indent}";
+
+				if(substr(
+					$code
+					, $tokens[$open]->pos + 1
+					, $tokens[$close]->pos - $tokens[$open]->pos - 1
+				) === $body
+				)
+				continue;
+
+				$replacements[$tokens[$open]->pos + 1] = [$tokens[$close]->pos, $body];
+				$covered = $tokens[$close]->pos;
+				continue;
+			}
+
+			// Preserve callback bodies and comments; only move argument boundaries.
+			$expanded = $tokens[$first]->line > $tokens[$open]->line;
+
+			foreach($commas as $comma)
+			{
+				$before = $comma - 1;
+				$after = $comma + 1;
+
+				while($tokens[$before]->id === T_WHITESPACE) $before--;
+
+				while($tokens[$after]->id === T_WHITESPACE) $after++;
+				$expanded = $expanded || $tokens[$before]->line !== $tokens[$comma]->line
+					|| $tokens[$after]->line !== $tokens[$comma]->line;
+			}
+
+			$firstLine = strtok(substr($code, $lineStart), "\n");
+
+			if(!$expanded && Diagnostics::columns($firstLine) <= $max) continue;
+
+			ExpressionLayout::listGaps(
+				$code
+				, $tokens
+				, $open
+				, $close
+				, $commas
+				, $indent
+				, $replacements
+			);
 		}
 
 		return self::apply($code, $replacements);
@@ -192,10 +276,12 @@ final class ReadableLayout
 	 * @param array<int,true> $blockEnds Byte offsets of closing braces belonging to code blocks.
 	 * @return bool Whether the statement ends with a block or a braced do/while construct.
 	 */
-	private static function endsWithBlock(Node $node, array $tokens, array $positions,
-		array $blockEnds
-	): bool
-	{
+	private static function endsWithBlock(
+		Node $node
+		, array $tokens
+		, array $positions
+		, array $blockEnds
+	): bool {
 		$trivia = [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT];
 
 		if($node instanceof Stmt\Do_)
@@ -237,7 +323,7 @@ final class ReadableLayout
 
 		self::walk($ast, static function(Node $node) use (&$groups, &$blockEnds, $code): void {
 			if(isset($node->stmts) && $node->getStartLine() !== $node->getEndLine())
-				$groups[] = $node->stmts;
+			$groups[] = $node->stmts;
 
 			if((isset($node->stmts) || $node instanceof Stmt\Switch_)
 				&& $code[$node->getEndFilePos()] === '}'
@@ -259,17 +345,25 @@ final class ReadableLayout
 					|| $current instanceof Stmt\Foreach_ || $current instanceof Stmt\While_
 					|| $current instanceof Stmt\Do_ || $current instanceof Stmt\Switch_
 					|| $current instanceof Stmt\TryCatch;
+
 				$multilineCall = false;
 
 				if($current instanceof Stmt\Expression || $current instanceof Stmt\Return_)
 				{
 					self::walk([$current], static function(Node $node) use (&$multilineCall): void {
 						if(self::isCall($node) && $node->getStartLine() !== $node->getEndLine())
-							$multilineCall = true;
+						$multilineCall = true;
 					});
 				}
 
-				if(!$control && !$multilineCall && !$previous instanceof Stmt\If_
+				$completedExpression = $previous instanceof Stmt\Expression
+					&& $previous->getStartLine() !== $previous->getEndLine();
+
+				$return = $current instanceof Stmt\Return_ && $current->getStartLine() > $previous
+					->getEndLine();
+
+				if(!$control && !$multilineCall && !$completedExpression && !$return
+					&& !$previous instanceof Stmt\If_
 					&& !self::endsWithBlock($previous, $tokens, $positions, $blockEnds)
 				) continue;
 
@@ -278,7 +372,7 @@ final class ReadableLayout
 				foreach($current->getComments() as $comment)
 				{
 					if($comment->getStartLine() > $previous->getEndLine())
-						$start = min($start, $comment->getStartFilePos());
+					$start = min($start, $comment->getStartFilePos());
 				}
 
 				$left = $previous->getEndFilePos() + 1;
@@ -287,7 +381,7 @@ final class ReadableLayout
 				while($before >= 0 && $tokens[$before]->id === T_WHITESPACE) $before--;
 
 				if($before >= 0 && $tokens[$before]->pos >= $left)
-					$left = $tokens[$before]->pos + strlen($tokens[$before]->text);
+				$left = $tokens[$before]->pos + strlen($tokens[$before]->text);
 
 				$gap = substr($code, $left, $start - $left);
 
@@ -305,6 +399,7 @@ final class ReadableLayout
 					$code
 					, trim($prefix) === '' ? $start : $previous->getStartFilePos()
 				);
+
 				$replacements[$left] = [$start, "\n\n" . $indent];
 			}
 		}

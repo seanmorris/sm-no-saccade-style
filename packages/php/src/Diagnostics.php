@@ -20,13 +20,12 @@ final class Diagnostics
 	}
 
 	public static function analyze(
-		string $code,
-		int $maxLineLength = 100,
-		int $maxUnseparatedLines = 10,
-		int $tabWidth = 4,
-		bool $ignoreLiterals = true
-	): array
-	{
+		string $code
+		, int $maxLineLength = 100
+		, int $maxUnseparatedLines = 10
+		, int $tabWidth = 4
+		, bool $ignoreLiterals = true
+	): array {
 		if($maxLineLength < 40 || $maxUnseparatedLines < 1 || $tabWidth < 1)
 		{
 			throw new \InvalidArgumentException(
@@ -53,6 +52,7 @@ final class Diagnostics
 				, [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE]
 				, true
 			);
+
 			preg_match('/^[\t ]*/', $lines[$token->line - 1], $indent);
 
 			for($line = $token->line; $line <= $end; $line++)
@@ -122,11 +122,13 @@ final class Diagnostics
 		}
 
 		$flush();
+		$messages = array_merge($messages, Internal\ExpressionLayout::callbackDiagnostics($code));
 
 		usort(
 			$messages
 			, static fn(array $left, array $right): int => $left['line'] <=> $right['line']
 		);
+
 		return $messages;
 	}
 }

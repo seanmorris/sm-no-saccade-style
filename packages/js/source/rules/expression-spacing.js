@@ -1,3 +1,5 @@
+import { stringConcatenation } from './_expression-layout.js';
+
 export default {
 	meta: {
 		type: 'layout'
@@ -43,6 +45,10 @@ export default {
 			}
 			, AssignmentExpression: node => between(node.left, node.right, node.operator)
 			, AssignmentPattern: node => between(node.left, node.right, '=')
+
+			, BinaryExpression(node) {
+				if(stringConcatenation(node)) between(node.left, node.right, '+');
+			}
 			, ArrowFunctionExpression: node => space(
 				source.getTokenBefore(node.body, token => token.value === '=>')
 			)

@@ -75,9 +75,7 @@ assert.equal(
 	, 'const pad = {id: name, index: 0};\n'
 );
 
-assert.equal(await format('const {id,\nindex}=pad;\n'),
-	'const {\n\tid\n\t, index\n} = pad;\n'
-);
+assert.equal(await format('const {id,\nindex}=pad;\n'), 'const {\n\tid\n\t, index\n} = pad;\n');
 
 for(const argument of [
 	"Object.assign(new Event('gamepaddisconnected'), {gamepad: menuPads[0]})"
@@ -87,7 +85,7 @@ for(const argument of [
 
 	assert.ok(
 		output.includes(
-			"if(menuPads[0]) window.dispatchEvent(\n\t\t\t\t\tObject.assign(new Event('gamepaddisconnected'), {gamepad: menuPads[0]})\n\t\t\t\t);"
+			"if(menuPads[0])\n\t\t\t\twindow.dispatchEvent(Object.assign(new Event('gamepaddisconnected'), {gamepad: menuPads[0]}));"
 		)
 		, output
 	);
@@ -191,7 +189,7 @@ const explicit = `const pad = {
 };
 `;
 
-assert.equal(await format(explicit), explicit);
+assert.equal(await format(explicit), 'const pad = {\n\tvalue: call(first, second)\n};\n');
 
 const typed = await format(`const pad: Pad={id: name,
 	index: 0
@@ -209,7 +207,7 @@ const optional = await format(
 	)
 );
 
-assert.match(optional, /dispatchEvent\?\.\(\n/u);
+assert.match(optional, /if\(menuPads\[0\]\)\n\t+target\?\.dispatchEvent\?\.\(Object\.assign/u);
 
 const callbackHead = await format(
 	`test('world downloads nearby maps and shared dependencies, evicts distant files and restores graphics', async({page})=>{
@@ -243,7 +241,7 @@ const loopCall = await format(`for(const file of files) await fs
 `
 );
 
-assert.match(loopCall, /\n\t\.copyFile\(\n\t\tsource\n\t\t, destination\n\t\);/u);
+assert.match(loopCall, /\n\t\.copyFile\(source, destination\);/u);
 
 await format(`const pad = { ...defaults,
 	['axis' + index]: ({left: 0, right: 1}), get id(){ return name; }

@@ -24,14 +24,13 @@ export default {
 
 					for(let line = token.loc.start.line; line <= token.loc.end.line; line++)
 					{
-						const prefix = line === token.loc.start.line ? source.lines[line - 1].slice(
-							0
-							, token.loc.start.column
-						) : '';
+						const prefix = line === token.loc.start.line
+							? source.lines[line - 1].slice(0, token.loc.start.column)
+							: '';
 
-						const suffix = line === token.loc.end.line ? source.lines[line - 1].slice(
-							token.loc.end.column
-						) : '';
+						const suffix = line === token.loc.end.line
+							? source.lines[line - 1].slice(token.loc.end.column)
+							: '';
 
 						if(!prefix.trim() && !suffix.trim()) ignored.add(line);
 					}

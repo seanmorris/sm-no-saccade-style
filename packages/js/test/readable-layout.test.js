@@ -240,7 +240,10 @@ const leadingArguments = `function combine(
 }
 `;
 
-assert.equal(await format(leadingArguments), leadingArguments);
+assert.equal(
+	await format(leadingArguments)
+	, leadingArguments.replace('run(first\n\t\t, second\n\t)', 'run(first, second)')
+);
 
 const typedInput = `declare function run(first: number,second: number): void;
 interface Worker {

@@ -50,9 +50,9 @@ export default {
 
 				if(!/^\s*$/u.test(actual)) return;
 
-				const breaks = newline ? '\n'.repeat(
-					Math.max(1, (actual.match(/\n/gu) ?? []).length)
-				) : '';
+				const breaks = newline
+					? '\n'.repeat(Math.max(1, (actual.match(/\n/gu) ?? []).length))
+					: '';
 
 				const text = breaks + prefix;
 

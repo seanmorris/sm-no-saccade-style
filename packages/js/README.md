@@ -67,11 +67,7 @@ if (motionParent
 
 ```js
 const visibleMaps = maps
-	.filter(map =>
-		map.visible
-		&& map.ready
-		|| map === activeMap
-	)
+	.filter(map => map.visible && map.ready || map === activeMap)
 	.map(map => ({
 		key: map.id
 		, label: map.name
@@ -82,18 +78,12 @@ const visibleMaps = maps
 			, map.height + marginY
 		]
 		, layers: map.layers
-			.filter(layer =>
-				layer.visible
-				&& layer.depth > minDepth
-			)
+			.filter(layer => layer.visible && layer.depth > minDepth)
 			.map(layer => ({
 				name: layer.name
 				, opacity: layer.opacity
 				, tiles: layer.tiles
-					.filter(tile =>
-						tile.index !== 0
-						&& tile.visible
-					)
+					.filter(tile => tile.index !== 0 && tile.visible)
 					.map(tile => ({
 						id: tile.id
 						, src: tile.src
@@ -157,7 +147,9 @@ Set `ignoreLiterals: false` on `max-line-length` to report long literal lines to
 To require a consistent layout within each parameter or argument list, enable
 `sm-no-saccade-style/parameter-layout`. Once a list has a break between items,
 every item starts on its own line below the opening parenthesis, using leading
-commas. An explicitly expanded list stays expanded even when it would fit inline.
+commas. Short, comment-free calls compact when the complete call fits the limit.
+Explicitly expanded function parameter lists remain vertical. Expanded arrays,
+objects, and argument wraps inside template interpolations retain their layout.
 Multiline callback bodies and literal contents remain intact. A callback body
 alone does not force the surrounding argument list to expand.
 
@@ -185,6 +177,8 @@ Keep related assignments together. Insert a blank line before a following contro
 Separate completed multiline expressions and variable declarations from the next statement, including object assignments and callback calls followed by another argument. A `return` after other work also gets a preceding blank line. Complete compact function bodies remain on one line.
 
 Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
+
+When a control header shares a long line with its unbraced body, separate the header first. Stacked headers and their bodies use the same indentation. Then wrap the containing call before its arguments' subexpressions.
 
 ```js
 entities[object.id] = registry.create(
@@ -301,7 +295,7 @@ const services = {
 
 ### Continuation operators
 
-Put spaces around assignment operators and default-value `=`, arrow `=>`, and ternary `? :` on the same line. Existing alignment spaces and line breaks are preserved. This rule does not change comparison or arithmetic spacing.
+Put spaces around assignment operators and default-value `=`, arrow `=>`, ternary `? :`, and string-concatenation `+` on the same line. Concatenation is recognized when an operand is a string literal, template literal, or another recognized concatenation. Existing alignment spaces and line breaks are preserved; other arithmetic and comparison spacing remains as written.
 
 ```js
 const state = (value = 0) => value ? 'ready' : 'pending';
@@ -321,7 +315,7 @@ const total = subtotal
 	- discount;
 ```
 
-Ternary markers also lead the continued line.
+Keep short ternaries inline. When a ternary spans multiple lines, both `?` and `:` lead equally indented continuation lines. Partially wrapped ternaries compact when they fit, or expand both branches. Long concatenations wrap at their own operators before splitting a short nested ternary.
 
 ```js
 const label = isReady

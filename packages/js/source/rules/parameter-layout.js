@@ -1,4 +1,6 @@
 import { columns, DEFAULT_MAX_LENGTH } from './_layout.js';
+import { controlBoundary } from './_expression-layout.js';
+import { callLayout } from './_call-layout.js';
 
 /** Find a parameter/argument list without mistaking parenthesized arguments for its bounds. */
 function list(source, node)
@@ -54,7 +56,9 @@ export default {
 			, additionalProperties: false
 		}]
 		, messages: {
-			vertical: 'Use one item per line throughout this expanded parameter or argument list.'
+			layout:
+				'Use a complete inline argument list when it fits, or consistent vertical arguments.'
+			, vertical: 'Use one item per line throughout this expanded parameter or argument list.'
 		}
 	}
 
@@ -64,6 +68,37 @@ export default {
 
 		function check(node)
 		{
+			if(controlBoundary(source, node, max)) return;
+
+			if(node.params && node.params.every(
+				param => param.loc.start.line === param.loc.end.line
+			)){
+				for(let parent = node.parent; parent; parent = parent.parent)
+				{
+					if(['CallExpression', 'NewExpression'].includes(parent.type)
+						&& callLayout(source, parent, max, 4)
+					)
+					return;
+
+					if(parent.type === 'BlockStatement') break;
+				}
+			}
+
+			const call = node.arguments && callLayout(source, node, max, 4);
+
+			if(call)
+			{
+				context.report(
+					{
+						node
+						, messageId: 'layout'
+						, fix: fixer => fixer.replaceTextRange(call.range, call.text)
+					}
+				);
+
+				return;
+			}
+
 			const span = list(source, node);
 
 			if(!span || span.commas.some(comma => !comma)) return;
