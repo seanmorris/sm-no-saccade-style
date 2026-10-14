@@ -68,6 +68,15 @@ const loop = await format(
 assert.ok(loop.includes('of [false,true])\ntest('), loop);
 assert.ok(loop.includes("(fallback ? 'textarea' : 'EditContext'), async({page}) => {"), loop);
 
+const multilineControl = await format(`for(const item of items) run(() => {
+    first();
+    second();
+});
+`
+);
+
+assert.ok(multilineControl.includes('of items)\nrun(() => {'), multilineControl);
+
 const concat = await format(`function example()
 {
     test('editing discards held-key repeats after ' + recovery + ' recovery with ' + (fallback ? 'textarea' : 'EditContext'), run);

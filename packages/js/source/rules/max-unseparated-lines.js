@@ -41,7 +41,8 @@ export default {
 
 				function flush()
 				{
-					if(count > max) context.report({
+					if(count > max)
+					context.report({
 						loc: { line: start, column: 0 }
 						, messageId: 'run'
 						, data: { count, max }

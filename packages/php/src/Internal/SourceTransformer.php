@@ -476,7 +476,8 @@ final class SourceTransformer
 			$end = $tokens[$right]->pos;
 			$gap = substr($code, $start, $end - $start);
 
-			if(trim($gap) === '' && !str_contains($gap, "\n")) $replacements[$start] = [$start
+			if(trim($gap) === '' && !str_contains($gap, "\n"))
+			$replacements[$start] = [$start
 			, $end
 				, "\n"
 			];
@@ -502,10 +503,8 @@ final class SourceTransformer
 			{
 				$stack[] = $index;
 
-				if($token->text === '{' && !isset($compact[$index]) && $next !== null) $separate(
-					$index
-					, $next
-				);
+				if($token->text === '{' && !isset($compact[$index]) && $next !== null)
+				$separate($index, $next);
 
 				continue;
 			}

@@ -107,7 +107,8 @@ export default {
 
 			gap(source.getTokenBefore(closing, {includeComments: true}), closing, indent, true);
 
-			if(edits.length) context.report({
+			if(edits.length)
+			context.report({
 				node
 				, messageId: 'expanded'
 				, fix: fixer => edits.map(edit => fixer.replaceTextRange(edit.range, edit.text))

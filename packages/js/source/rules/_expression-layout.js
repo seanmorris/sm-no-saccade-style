@@ -44,7 +44,7 @@ export function controlBoundary(source, node, max, tabWidth = 4)
 		const line = source.lines[body.loc.start.line - 1];
 		const flat = body.type === 'ExpressionStatement' ? compactExpression(source, body) : null;
 
-		if(columns(line, tabWidth) <= max
+		if(body.loc.start.line === body.loc.end.line && columns(line, tabWidth) <= max
 			&& (flat === null || columns(
 				line.slice(0, body.loc.start.column) + flat
 				, tabWidth

@@ -56,6 +56,26 @@ PHP
 		self::assertStringContainsString("function(\$page) {\n\tstart", $output);
 	}
 
+	public function testMultilineControlBodiesSplitEvenWhenTheirFirstLineFits(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+foreach($items as $item) run(function() {
+    first();
+    second();
+});
+if($ready) {
+    first();
+} else if($waiting) {
+    second();
+}
+PHP
+		);
+
+		self::assertStringContainsString("as \$item)\nrun(function() {", $output);
+		self::assertStringNotContainsString("else\nif", $output);
+	}
+
 	public function testStackedControlsKeepTheirBodiesAndLiteralsIntact(): void
 	{
 		$output = $this->format(<<<'PHP'

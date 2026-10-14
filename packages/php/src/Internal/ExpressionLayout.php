@@ -239,6 +239,9 @@ final class ExpressionLayout
 			if(count($node->stmts) !== 1) return;
 
 			$body = $node->stmts[0];
+
+			if($node instanceof Stmt\Else_ && $body instanceof Stmt\If_) return;
+
 			$index = ($positions[$body->getStartFilePos()] ?? 0) - 1;
 
 			while($index >= 0 && in_array(
@@ -273,9 +276,10 @@ final class ExpressionLayout
 			) use ($code, $lines, $max
 				, &$edits
 			): void {
-				if($head->line !== $body->getStartLine() || Diagnostics::columns(
-					$lines[$head->line - 1]
-				) <= $max
+				if($head->line !== $body->getStartLine() || ($body->getStartLine() === $body
+					->getEndLine()
+					&& Diagnostics::columns($lines[$head->line - 1]) <= $max
+				)
 				)
 				return;
 
