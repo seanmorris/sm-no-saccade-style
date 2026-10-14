@@ -82,9 +82,10 @@ final class Diagnostics
 		$flush = static function() use (&$messages, &$count, &$start, $maxUnseparatedLines): void {
 			if($count > $maxUnseparatedLines)
 			{
-				$messages[] = ['line' => $start
-				, 'severity' => 'warning'
-				, 'rule' => 'max-unseparated-lines'
+				$messages[] = [
+					'line' => $start
+					, 'severity' => 'warning'
+					, 'rule' => 'max-unseparated-lines'
 					, 'message' =>
 						"$count consecutive code lines without a blank line; "
 						. "consider separating semantic blocks (limit $maxUnseparatedLines)."
@@ -101,9 +102,10 @@ final class Diagnostics
 
 			if($width > $maxLineLength && !isset($excluded[$line]))
 			{
-				$messages[] = ['line' => $line
-				, 'severity' => 'error'
-				, 'rule' => 'max-line-length'
+				$messages[] = [
+					'line' => $line
+					, 'severity' => 'error'
+					, 'rule' => 'max-line-length'
 					, 'message' =>
 						"Line is $width columns; limit is $maxLineLength. "
 						. "Wrap at a logical boundary."

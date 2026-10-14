@@ -386,8 +386,7 @@ final class ExpressionLayout
 					$question = $index;
 
 					if($tokens[$index]->pos > $node->if->getEndFilePos() && $tokens[$index]
-						->pos < $node
-						->else->getStartFilePos() && $tokens[$index]->text === ':'
+						->pos < $node->else->getStartFilePos() && $tokens[$index]->text === ':'
 					)
 					$colon = $index;
 				}
@@ -462,6 +461,62 @@ final class ExpressionLayout
 		return ReadableLayout::apply($code, $edits);
 	}
 
+	/** Rejoin a short member access without flattening its surrounding expression. */
+	public static function shortMembers(string $code, int $max): string
+	{
+		$tokens = \PhpToken::tokenize($code, TOKEN_PARSE);
+		$positions = [];
+
+		foreach($tokens as $index => $token) $positions[$token->pos] = $index;
+		$edits = [];
+		$covered = -1;
+
+		self::visit(
+			$code
+			, static function(
+				Node $node
+			) use ($code, $tokens, $positions, $max, &$edits, &$covered): void {
+				if(!$node instanceof Expr\PropertyFetch
+					&& !$node instanceof Expr\NullsafePropertyFetch
+					&& !$node instanceof Expr\StaticPropertyFetch
+						&& !$node instanceof Expr\ClassConstFetch
+				)
+				return;
+
+				if($node->getStartLine() === $node->getEndLine() || $node
+					->getStartFilePos() < $covered
+				)
+				return;
+
+				$start = $positions[$node->getStartFilePos()];
+				$end = $start;
+
+				while(isset($tokens[$end]) && $tokens[$end]->pos <= $node->getEndFilePos()) $end++;
+				$flat = ReadableLayout::inline($tokens, $start, $end);
+
+				if($flat === null) return;
+
+				$lineStart = strrpos(substr($code, 0, $node->getStartFilePos()), "\n");
+				$lineStart = $lineStart === false ? 0 : $lineStart + 1;
+				$lineEnd = strpos($code, "\n", $node->getEndFilePos() + 1);
+				$prefix = substr($code, $lineStart, $node->getStartFilePos() - $lineStart);
+
+				$suffix = substr(
+					$code
+					, $node->getEndFilePos() + 1
+					, ($lineEnd === false ? strlen($code) : $lineEnd) - $node->getEndFilePos() - 1
+				);
+
+				if(Diagnostics::columns($prefix . $flat . $suffix) > $max) return;
+
+				$edits[$node->getStartFilePos()] = [$node->getEndFilePos() + 1, $flat];
+				$covered = $node->getEndFilePos() + 1;
+			}
+		);
+
+		return ReadableLayout::apply($code, $edits);
+	}
+
 	/** Suggest named local callbacks without performing a source refactoring. */
 	public static function callbackDiagnostics(string $code): array
 	{
@@ -477,9 +532,10 @@ final class ExpressionLayout
 			))
 			return;
 
-			$messages[] = ['line' => $value->getStartLine(), 'severity' => 'warning'
-			, 'rule' =>
-				'documented-callback'
+			$messages[] = [
+				'line' => $value->getStartLine()
+				, 'severity' => 'warning'
+				, 'rule' => 'documented-callback'
 				, 'message' =>
 				'Consider assigning this documented multiline callback to a named local before passing it.'
 			];

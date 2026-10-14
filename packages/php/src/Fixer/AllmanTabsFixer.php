@@ -22,15 +22,13 @@ final class AllmanTabsFixer extends AbstractNoSaccadeFixer implements Configurab
 
 	protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
 	{
-		return new FixerConfigurationResolver(
-			[(new FixerOptionBuilder(
-				'max_line_length'
-				, 'Maximum columns for a complete compact statement.'
-			))->setAllowedTypes(['int'])
+		return new FixerConfigurationResolver([(new FixerOptionBuilder(
+			'max_line_length'
+			, 'Maximum columns for a complete compact statement.'
+		))->setAllowedTypes(['int'])
 				->setAllowedValues([static fn(int $value): bool => $value >= 40])->setDefault(100)
 				->getOption()
-			]
-		);
+		]);
 	}
 
 	protected static function ruleName(): string

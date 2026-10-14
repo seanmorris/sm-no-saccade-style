@@ -343,7 +343,19 @@ $list = [
 ];
 ```
 
-Short grouped rows are allowed when they stay compact.
+Expanded associative arrays put every entry on its own line, including the first. Keep each entry's short value intact; expand the map before splitting a member access or nested call. This also applies to keyed destructuring and `array()` syntax. Nested callbacks, comments and literal contents keep their structure.
+
+A sole expanded array argument attaches to its call, including the closing delimiters. Calls with additional arguments keep separate argument lines:
+
+```php
+$state = json_encode([
+	'phase' => $this->phase
+	, 'time' => $this->game->engine->time
+	, 'progress' => $this->backdrop->progress()
+]);
+```
+
+Short grouped rows in indexed arrays are allowed when they stay compact.
 
 ```php
 <?php
@@ -449,7 +461,7 @@ switch($mode)
 }
 ```
 
-Multiline control heads keep `{` on the same line as the closing `)`.
+Multiline control heads with a separate closing `)` keep `{` on that closing line.
 
 ```php
 <?php
@@ -459,6 +471,18 @@ if($primaryTarget
 	&& !$queue
 ){
 	visit($primaryTarget);
+}
+```
+
+For a `foreach` over an expanded array, keep the array closer, `as` binding, and closing parenthesis together when they fit. The body then starts with an Allman brace:
+
+```php
+foreach([
+	'platformer' => 'Platformer'
+	, 'world' => 'Streaming world'
+] as $id => $label)
+{
+	register($id, $label);
 }
 ```
 

@@ -299,8 +299,7 @@ $response = Http::post(
 	$endpoint
 	, json_encode([
 		'ksql' => $string
-	]
-	)
+	])
 );
 
 PHP
@@ -329,8 +328,7 @@ $response = Http::post(
 	$endpoint
 	, json_encode([
 		'ksql' => $string
-	]
-	)
+	])
 );
 
 PHP

@@ -29,8 +29,8 @@ final class ReadableLayoutTest extends TestCase
 			, "consume(function() {\n\tstep();\n});"
 			, "declare(ticks=1)\n{\n\tstep();\n}"
 			, 'function short(){ return 1; }'
-		] as $block
-		){
+		] as $block)
+		{
 			$output = $this->format("<?php\n$block\nafter();\n");
 			self::assertStringEndsWith("\n\nafter();\n", $output, $block);
 		}
@@ -117,8 +117,8 @@ PHP
 	{
 		foreach(['/* Done. */', '/* Done. */ /* Also done. */'
 			, "/* Done.\n\nStill done. */"
-		] as $comment
-		){
+		] as $comment)
+		{
 			$input = "<?php\nfunction work()\n{\n\twhile(\$ready)\n\t{\n\t\tstep();\n\t} "
 				. $comment . " after();\n}\n";
 
@@ -516,11 +516,9 @@ PHP;
 		$expected = <<<'PHP'
 <?php
 $result = outer(
-	inner(
-		[
-			'value' => true
-		]
-	)
+	inner([
+		'value' => true
+	])
 );
 
 PHP;

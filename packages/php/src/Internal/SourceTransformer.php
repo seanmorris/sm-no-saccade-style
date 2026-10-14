@@ -73,6 +73,15 @@ final class SourceTransformer
 			$code = $tokens->generateCode();
 			$code = self::withClassPropertyAlignment($code);
 			$code = self::withClosingRails($code);
+			$tokens = self::tokens($code);
+
+			$code = ArrayLayout::foreachTails(
+				$code
+				, $tokens
+				, self::closingRailPairs($tokens)
+				, $maxLineLength
+			);
+
 			$code = ExpressionLayout::stackedIndent($code);
 
 
@@ -84,6 +93,11 @@ final class SourceTransformer
 
 	private static function withLineLength(string $code, int $maxLineLength): string
 	{
+		$tokens = self::tokens($code);
+		$code = ArrayLayout::calls($code, $tokens, self::closingRailPairs($tokens), $maxLineLength);
+		$tokens = self::tokens($code);
+		$code = ArrayLayout::maps($code, $tokens, self::closingRailPairs($tokens), $maxLineLength);
+		$code = ExpressionLayout::shortMembers($code, $maxLineLength);
 		$code = ExpressionLayout::splitControls($code, $maxLineLength);
 		$tokens = self::tokens($code);
 
