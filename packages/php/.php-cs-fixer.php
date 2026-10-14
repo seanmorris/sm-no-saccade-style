@@ -10,4 +10,4 @@ $finder = PhpCsFixer\Finder::create()
 	->append([__DIR__ . '/bin/sm-no-saccade-style'])
 ;
 
-return SeanMorris\NoSaccadeStyle\ConfigFactory::recommended($finder);
+return SeanMorris\NoSaccadeStyle\ConfigFactory::recommended($finder)->setUsingCache(false);

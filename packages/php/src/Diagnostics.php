@@ -15,6 +15,7 @@ final class Diagnostics
 		{
 			$column += $character === "\t" ? $tabWidth - $column % $tabWidth : 1;
 		}
+
 		return $column;
 	}
 
@@ -73,6 +74,7 @@ final class Diagnostics
 				}
 			}
 		}
+
 		$messages = [];
 		$start = 0;
 		$count = 0;
@@ -118,6 +120,7 @@ final class Diagnostics
 
 			$count++;
 		}
+
 		$flush();
 
 		usort(
