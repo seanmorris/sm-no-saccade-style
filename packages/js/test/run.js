@@ -10,3 +10,4 @@ import './no-trailing-whitespace.test.js';
 import './recommended-config.test.js';
 import './readable-layout.test.js';
 import './parameter-layout.test.js';
+import './expression-layout.test.js';

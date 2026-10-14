@@ -24,5 +24,7 @@ export const indentOptions = [
 	'tab'
 	, {
 		ignoredNodes: ignoredSingleStatementNodes
+		// Use each chain's existing rail as the base for its arguments and callback bodies.
+		, MemberExpression: 'off'
 	}
 ];

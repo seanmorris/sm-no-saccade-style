@@ -5,7 +5,9 @@ import tsParser from '@typescript-eslint/parser';
 import plugin from '../source/index.js';
 
 const eslint = new ESLint({
-	overrideConfigFile: true, overrideConfig: plugin.configs.recommended, fix: true
+	overrideConfigFile: true
+	, overrideConfig: plugin.configs.recommended
+	, fix: true
 });
 
 async function format(input, filePath = 'blocks.js')
@@ -19,10 +21,13 @@ async function format(input, filePath = 'blocks.js')
 	const parser = filePath.endsWith('.ts') ? tsParser.parse : parse;
 
 	const ast = text => JSON.parse(JSON.stringify(parser(text, {
-		ecmaVersion: 'latest', sourceType: 'module'
+		ecmaVersion: 'latest'
+		, sourceType: 'module'
 	}), (key, value) => ['start', 'end', 'loc', 'range', 'raw'].includes(key) ? undefined : value
 	));
+
 	assert.deepEqual(ast(output), ast(input), 'Block layout must preserve the program.');
+
 	return output;
 }
 
@@ -57,6 +62,7 @@ ${extra}${indent}\tstep(item);
 ${indent}${closes} after();
 `
 	);
+
 	assert.ok(output.includes(`${indent}${closes}\n\nafter();\n`), output);
 }
 
@@ -72,6 +78,7 @@ const nested = await format(`function work()
 after();
 `
 );
+
 assert.match(nested, /\t\t\}\}\n\}\n\nafter/u);
 
 const branches = await format(`if(ready)
@@ -107,6 +114,7 @@ while(ready);
 after();
 `
 );
+
 assert.match(branches, /\t\}\}\nelse/u);
 assert.match(branches, /\t\}\}\ncatch/u);
 assert.match(branches, /\}\nfinally/u);
@@ -128,6 +136,7 @@ for(const gap of ['', ' ', '\n\n', '\n\n\n'])
 after();
 `
 	);
+
 	assert.match(output, /\}\nelse if\(pending\)/u);
 	assert.match(output, /\}\nelse\n\{/u);
 	assert.match(output, /\}\n\nafter\(\);/u);
@@ -142,6 +151,7 @@ const nestedClauses = await format(`function work()
 }
 `
 );
+
 assert.match(nestedClauses, /\t\t\}\n\t\telse\n\t\t\{/u);
 assert.match(nestedClauses, /\t\}\n\telse if\(retry\)/u);
 assert.match(nestedClauses, /\t\}\n\telse\n\t\{/u);
@@ -153,6 +163,7 @@ const stacked = await format(`if(ready)
 	} else recover();
 `
 );
+
 assert.match(stacked, /\t\}\nelse recover\(\);/u);
 
 for(const handler of ['catch(error)', 'catch'])
@@ -171,6 +182,7 @@ finally
 }
 `
 	);
+
 	assert.ok(output.includes(`}\n${handler}\n{`), output);
 	assert.match(output, /\}\nfinally\n\{/u);
 }
@@ -200,6 +212,7 @@ const typedClauses = await format(`function work(value: boolean): void
 }
 `, 'clauses.ts'
 );
+
 assert.match(typedClauses, /\t\}\n\telse\n\t\{/u);
 
 const comments = await format(`while(ready)
@@ -210,6 +223,7 @@ const comments = await format(`while(ready)
 after();
 `
 );
+
 assert.match(comments, /\} \/\/ Done iterating\.\n\n\/\/ Describe/u);
 assert.match(comments, /Describe the next statement\.\nafter/u);
 
@@ -224,6 +238,7 @@ for(const comment of ['/* Done. */', '/* Done. */ /* Also done. */', '/* Done.\n
 }
 `
 	);
+
 	assert.ok(output.includes(`} ${comment}\n\n\tafter();`), output);
 }
 
@@ -239,6 +254,7 @@ const staticBlock = await format(`class Worker
 }
 `
 );
+
 assert.match(staticBlock, /\t\t\}\}\n\n\tvalue/u);
 
 const namespace = await format(`namespace Game
@@ -252,6 +268,7 @@ const namespace = await format(`namespace Game
 after();
 `, 'blocks.ts'
 );
+
 assert.match(namespace, /\t\t\}\}\}\n\nafter/u);
 
 const members = await format(`class Worker
@@ -264,6 +281,7 @@ const members = await format(`class Worker
 }
 `
 );
+
 assert.match(members, /\t\}\n\n\tvalue/u);
 
 const data = await format('const value = { text: "}} next();" };\nafter();\n');

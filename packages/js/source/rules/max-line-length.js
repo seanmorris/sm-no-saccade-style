@@ -5,7 +5,8 @@ export default {
 	meta: {
 		type: 'layout'
 		, fixable: 'whitespace'
-		, schema: [{ type: 'object'
+		, schema: [{
+			type: 'object'
 			, properties: {
 				max: { type: 'integer', minimum: 40 }
 				, tabWidth: { type: 'integer', minimum: 1 }
@@ -13,8 +14,8 @@ export default {
 			}
 			, additionalProperties: false
 		}]
-		, messages: { long:
-			'Line is {{length}} columns; limit is {{max}}. Wrap at a logical boundary.'
+		, messages: {
+			long: 'Line is {{length}} columns; limit is {{max}}. Wrap at a logical boundary.'
 		}
 	}
 
@@ -22,8 +23,9 @@ export default {
 
 	, create(context) {
 		const { max = DEFAULT_MAX_LENGTH, tabWidth = 4, ignoreLiterals = true } = context.options[
-			0
+		0
 		] ?? {};
+
 		const expanding = new Set();
 		const calls = [];
 
@@ -46,7 +48,7 @@ export default {
 
 				calls.sort(
 					(left, right) => left.range[0] - right.range[0] || right.range[1] - left.range[
-						1
+					1
 					]
 				);
 
@@ -62,7 +64,8 @@ export default {
 						line
 					);
 
-					context.report({ node: call
+					context.report({
+						node: call
 						, message: 'Wrap this call around complete arguments and align its closing parenthesis.'
 						, fix: fixer => fixer.replaceTextRange(layout.range, layout.text)
 					});
@@ -142,12 +145,11 @@ export default {
 						if(right < start + text.length) range = [left, right];
 					}
 
-					context.report({ loc: { line: index + 1, column: 0 }
-						, messageId: 'long', data: { length, max }
-						, fix: range ? fixer => fixer.replaceTextRange(
-							range
-							, `\n${indent}`
-						) : null
+					context.report({
+						loc: { line: index + 1, column: 0 }
+						, messageId: 'long'
+						, data: { length, max }
+						, fix: range ? fixer => fixer.replaceTextRange(range, `\n${indent}`) : null
 					});
 				});
 			}

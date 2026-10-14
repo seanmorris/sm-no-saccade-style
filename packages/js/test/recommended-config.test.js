@@ -38,13 +38,16 @@ const [jsResult] = await eslint.lintText('const x = 1;', { filePath: 'fixture.js
 const [tsResult] = await eslint.lintText('const x: number = 1;', { filePath: 'fixture.ts' });
 const [semiResult] = await eslint.lintText('const x = 1\n', { filePath: 'fixture-semi.js' });
 
-const [ownLineSemiResult] = await eslint.lintText('foo()\n;\n'
+const [ownLineSemiResult] = await eslint.lintText(
+	'foo()\n;\n'
 	, { filePath: 'fixture-own-line-semi.js' }
 );
 
-const [fixedOwnLineSemiResult] = await fixingEslint.lintText('foo()\n;\nbar();\n'
+const [fixedOwnLineSemiResult] = await fixingEslint.lintText(
+	'foo()\n;\nbar();\n'
 	, { filePath: 'fixture-own-line-semi.js' }
 );
+
 const [bareNewResult] = await eslint.lintText('new Set;\n', { filePath: 'fixture-bare-new.js' });
 
 const [controlChainResult] = await eslint.lintText(
@@ -52,7 +55,8 @@ const [controlChainResult] = await eslint.lintText(
 	, { filePath: 'fixture-control-chain.js' }
 );
 
-const [singleLineControlResult] = await eslint.lintText(`if(foo)\n\tbar();\n`
+const [singleLineControlResult] = await eslint.lintText(
+	`if(foo)\n\tbar();\n`
 	, { filePath: 'fixture-single-control.js' }
 );
 
@@ -61,6 +65,7 @@ const [fixedJsdocResult] = await fixingEslint.lintText(
 		filePath: 'fixture-fix.js'
 	}
 );
+
 const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
 const readmeExampleMatch = readme.match(/### sm-no-saccade-style\s+```js\n([\s\S]*?)\n```/u);
 

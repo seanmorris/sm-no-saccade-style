@@ -1,11 +1,6 @@
 import assert from 'node:assert/strict';
 
-import {
-	collectChainedCallbackBodyRanges,
-	hasMultilineControlHead
-} from '../source/rules/allman-tabs.js';
-
-assert.deepEqual(collectChainedCallbackBodyRanges(null), []);
+import { hasMultilineControlHead } from '../source/rules/allman-tabs.js';
 
 assert.equal(hasMultilineControlHead({
 	type: 'BlockStatement'

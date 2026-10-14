@@ -1,7 +1,8 @@
 export default {
 	meta: {
 		type: 'suggestion'
-		, schema: [{ type: 'object'
+		, schema: [{
+			type: 'object'
 			, properties: { max: { type: 'integer', minimum: 1 } }
 			, additionalProperties: false
 		}]
@@ -10,6 +11,7 @@ export default {
 
 	, create(context) {
 		const max = context.options[0]?.max ?? 10;
+
 		return {
 
 			'Program:exit'() {
@@ -40,8 +42,10 @@ export default {
 
 				function flush()
 				{
-					if(count > max) context.report({ loc: { line: start, column: 0 }
-						, messageId: 'run', data: { count, max }
+					if(count > max) context.report({
+						loc: { line: start, column: 0 }
+						, messageId: 'run'
+						, data: { count, max }
 					});
 
 					count = 0;

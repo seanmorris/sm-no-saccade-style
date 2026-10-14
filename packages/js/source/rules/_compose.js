@@ -43,6 +43,7 @@ export function composeListeners(...listenerMaps)
 			}
 
 			const previous = merged[selector];
+
 			merged[selector] = (node) => {
 				previous(node);
 				handler(node);

@@ -181,90 +181,21 @@ function isOwnLineClosingDelimiter(sourceCode, descriptor)
 	return lineIndent.length === token.loc.start.column;
 }
 
-function isLeadingChainDot(sourceCode, descriptor)
-{
-	if(descriptor.messageId !== 'wrongIndentation' || descriptor.node?.type !== 'Punctuator')
-	{
-		return false;
-	}
-
-	const token = sourceCode.getTokenByRangeStart(descriptor.node.range[0]);
-
-	if(!token || token.value !== '.')
-	{
-		return false;
-	}
-
-	const lineIndent = getTokenLineIndent(sourceCode, token);
-
-	return lineIndent.length === token.loc.start.column;
-}
-
-export function collectChainedCallbackBodyRanges(root)
-{
-	const ranges = [];
-
-	function visit(node, parent, grandparent)
-	{
-		if(!node || typeof node !== 'object')
-		{
-			return;
-		}
-
-		if(
-			node.type === 'BlockStatement'
-			&& parent?.type === 'ArrowFunctionExpression'
-			&& grandparent?.type === 'CallExpression'
-		){
-			ranges.push([node.loc.start.line, node.loc.end.line]);
-		}
-
-		for(const [key, value] of Object.entries(node))
-		{
-			if(key === 'parent')
-			{
-				continue;
-			}
-
-			if(Array.isArray(value))
-			{
-				for(const child of value)
-				{
-					if(child?.type)
-					{
-						visit(child, node, parent);
-					}
-				}
-
-				continue;
-			}
-
-			if(value?.type)
-			{
-				visit(value, node, parent);
-			}
-		}
-	}
-
-	visit(root, null, null);
-
-	return ranges;
-}
-
 export default {
 	meta: {
 		type: 'layout'
 		, fixable: 'whitespace'
-		, schema: [{ type: 'object'
+		, schema: [{
+			type: 'object'
 			, properties: {
 				maxLineLength: { type: 'integer', minimum: 40 }
 			}
 			, additionalProperties: false
 		}]
 		, messages: {
-			...indentRule.meta.messages,
-			...noMixedSpacesAndTabsRule.meta.messages,
-			expectedAllmanOpen: 'Opening brace should be on its own line.'
+			...indentRule.meta.messages
+			, ...noMixedSpacesAndTabsRule.meta.messages
+			, expectedAllmanOpen: 'Opening brace should be on its own line.'
 			, unexpectedInlineAllmanOpen:
 				'Inline opening brace should stay on the same line as the head.'
 			, unexpectedMultilineControlOpen: 'Multiline control heads should keep the opening brace on the same line as the closing parenthesis.'
@@ -288,24 +219,14 @@ export default {
 			return blockIndents.get(token.range[0]) ?? getTokenLineIndent(sourceCode, token);
 		}
 
-		const chainedCallbackBodyRanges = collectChainedCallbackBodyRanges(sourceCode.ast);
-
 		const filteredIndentContext = withOptions(
 			withReportFilter(
 				context,
 				(descriptor) => !isOwnLineClosingDelimiter(sourceCode, descriptor)
-					&& !isLeadingChainDot(sourceCode, descriptor)
-					&& !(
-						descriptor.messageId === 'wrongIndentation'
-						&& descriptor.loc?.start?.line
-						&& chainedCallbackBodyRanges.some(
-							([start, end]) => descriptor.loc.start.line > start && descriptor.loc
-								.start.line < end
-						)
-					)
 			),
 			indentOptions
 		);
+
 		const indentListeners = indentRule.create(filteredIndentContext);
 
 		const noMixedListeners = noMixedSpacesAndTabsRule.create(
@@ -332,11 +253,14 @@ export default {
 				return;
 			}
 
-			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace
+			const hasComments = sourceCode.getTokensBetween(
+				previousToken
+				, openingBrace
 				, { includeComments: true }
 			).some(
 				(token) => token.type === 'Block' || token.type === 'Line'
 			);
+
 			const inlineBody = isInlineBody(node);
 			const emptyBody = isEmptyBody(node);
 			const multilineControlHead = hasMultilineControlHead(node);
@@ -463,7 +387,9 @@ export default {
 
 			if(!ranges.size) return;
 
-			context.report({ node, messageId: 'expandedBody'
+			context.report({
+				node
+				, messageId: 'expandedBody'
 				, fix: fixer =>
 					[...ranges.values()].map(range => fixer.replaceTextRange(range, '\n'))
 			});

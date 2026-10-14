@@ -15,13 +15,17 @@ import maxUnseparatedLines from './rules/max-unseparated-lines.js';
 import separatorSpacing from './rules/separator-spacing.js';
 import statementSpacing from './rules/statement-spacing.js';
 import parameterLayout from './rules/parameter-layout.js';
+import expressionSpacing from './rules/expression-spacing.js';
+import objectLayout from './rules/object-layout.js';
 
 const plugin = {
 	meta: {
 		name: 'sm-no-saccade-style'
 	}
 	, rules: {
-		'parameter-layout': parameterLayout
+		'expression-spacing': expressionSpacing
+		, 'object-layout': objectLayout
+		, 'parameter-layout': parameterLayout
 		, 'statement-spacing': statementSpacing
 		, 'separator-spacing': separatorSpacing
 		, 'declaration-spacing': declarationSpacing
@@ -45,7 +49,9 @@ plugin.configs.recommended = [
 			, '@stylistic': stylistic
 		}
 		, rules: {
-			'sm-no-saccade-style/statement-spacing': 'error'
+			'sm-no-saccade-style/expression-spacing': 'error'
+			, 'sm-no-saccade-style/object-layout': 'error'
+			, 'sm-no-saccade-style/statement-spacing': 'error'
 			, 'sm-no-saccade-style/separator-spacing': 'error'
 			, 'sm-no-saccade-style/declaration-spacing': 'error'
 			, 'sm-no-saccade-style/max-line-length': ['error', { max: 100 }]

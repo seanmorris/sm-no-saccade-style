@@ -1,6 +1,8 @@
 export default {
 	meta: {
-		type: 'layout', fixable: 'whitespace', schema: []
+		type: 'layout'
+		, fixable: 'whitespace'
+		, schema: []
 		, messages: { blank: 'Add a blank line before this declaration and its documentation.' }
 	}
 
@@ -15,9 +17,11 @@ export default {
 			if(node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression'
 				|| node.type === 'ClassExpression'
 			){
-				if(node.parent.type !== 'VariableDeclarator') return;
-
-				node = node.parent.parent;
+				if(node.parent.type === 'VariableDeclarator') node = node.parent.parent;
+				else if(node.parent.type === 'AssignmentExpression' && node.parent.right === node
+					&& node.parent.parent.type === 'ExpressionStatement'
+				) node = node.parent.parent;
+				else return;
 			}
 
 			let first = source.getFirstToken(node);
@@ -60,7 +64,8 @@ export default {
 			const indent = source.lines[first.loc.start.line - 1].match(/^[\t ]*/u)[0];
 
 			context.report({
-				node, messageId: 'blank'
+				node
+				, messageId: 'blank'
 				, fix: fixer => fixer.replaceTextRange(
 					[previous.range[1], first.range[0]]
 					, `\n\n${indent}`
@@ -69,8 +74,11 @@ export default {
 		}
 
 		return {
-			ClassDeclaration: check, FunctionDeclaration: check, MethodDefinition: check
-			, TSDeclareFunction: check, TSAbstractMethodDefinition: check
+			ClassDeclaration: check
+			, FunctionDeclaration: check
+			, MethodDefinition: check
+			, TSDeclareFunction: check
+			, TSAbstractMethodDefinition: check
 			, FunctionExpression: check
 			, ArrowFunctionExpression: check
 			, ClassExpression: check

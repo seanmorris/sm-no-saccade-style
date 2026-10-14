@@ -37,7 +37,9 @@ function list(source, node)
 	if(!closing) return null;
 
 	return {
-		items, opening, closing
+		items
+		, opening
+		, closing
 		, commas: items.slice(1).map(item => source.getTokenBefore(item, punctuator(',')))
 	};
 }
@@ -46,11 +48,13 @@ export default {
 	meta: {
 		type: 'layout'
 		, fixable: 'whitespace'
-		, schema: [{type: 'object', properties: {max: {type: 'integer', minimum: 40}}
+		, schema: [{
+			type: 'object'
+			, properties: {max: {type: 'integer', minimum: 40}}
 			, additionalProperties: false
 		}]
-		, messages: {vertical:
-			'Use one item per line throughout this expanded parameter or argument list.'
+		, messages: {
+			vertical: 'Use one item per line throughout this expanded parameter or argument list.'
 		}
 	}
 
@@ -74,6 +78,7 @@ export default {
 			const separated = commas.some(comma => {
 				const before = source.getTokenBefore(comma);
 				const after = source.getTokenAfter(comma);
+
 				return before.loc.end.line !== comma.loc.start.line
 					|| comma.loc.end.line !== after.loc.start.line;
 			});
@@ -108,7 +113,8 @@ export default {
 			if(edits.length)
 			{
 				context.report({
-					node, messageId: 'vertical'
+					node
+					, messageId: 'vertical'
 					, fix: fixer => edits.map(edit => fixer.replaceTextRange(edit.range, edit.text))
 				});
 			}
@@ -118,9 +124,13 @@ export default {
 			FunctionDeclaration: check
 			, FunctionExpression: check
 			, ArrowFunctionExpression: check
-			, CallExpression: check, NewExpression: check
-			, TSDeclareFunction: check, TSMethodSignature: check, TSFunctionType: check
-			, TSCallSignatureDeclaration: check, TSConstructSignatureDeclaration: check
+			, CallExpression: check
+			, NewExpression: check
+			, TSDeclareFunction: check
+			, TSMethodSignature: check
+			, TSFunctionType: check
+			, TSCallSignatureDeclaration: check
+			, TSConstructSignatureDeclaration: check
 		};
 	}
 };

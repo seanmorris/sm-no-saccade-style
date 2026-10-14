@@ -14,6 +14,7 @@ const OBJECT_TYPES = new Set([
 	'ObjectExpression'
 	, 'ObjectPattern'
 ]);
+
 const MAX_GROUPED_ROW_COLUMN = 80;
 
 const SPACED_FINAL_TYPES = new Set(
@@ -67,6 +68,7 @@ function buildWrapGroupedRowFix(sourceCode, fixer, lineItems)
 	const previousToken = sourceCode.getTokenBefore(firstItemToken);
 	const hasLeadingComma = previousToken?.value === ',' && previousToken.loc.start
 		.line === firstItemToken.loc.start.line;
+
 	const rowStartToken = hasLeadingComma ? previousToken : firstItemToken;
 	const rowEndToken = sourceCode.getLastToken(lineItems.at(-1));
 
@@ -229,6 +231,7 @@ export default {
 					, entry.valueToken
 					)
 			);
+
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
 				&& alignmentEntries.length > 1
 				&& alignmentEntries.some((entry) => entry.afterText.length > 1);
@@ -368,6 +371,7 @@ export default {
 					, entry.equalsToken
 					)
 			);
+
 			const shouldAlign = node.loc.start.line !== node.loc.end.line
 				&& alignmentEntries.length > 1
 				&& alignmentEntries.some((entry) => entry.beforeText.length > 1);
@@ -391,7 +395,7 @@ export default {
 							Math.max(
 								1
 								, targetWidth - (entry.leftToken.range[1] - entry.anchorToken.range[
-									0
+								0
 								])
 							)
 						)

@@ -12,8 +12,11 @@ const CONTROL = new Set(
 
 export default {
 	meta: {
-		type: 'layout', fixable: 'whitespace', schema: []
-		, messages: { blank:
+		type: 'layout'
+		, fixable: 'whitespace'
+		, schema: []
+		, messages: {
+			blank:
 			'Separate completed blocks, control flow and multiline calls from adjacent statements.'
 		}
 	}
@@ -68,7 +71,10 @@ export default {
 				]
 					.includes(current.type) && hasMultilineCall(current);
 
-				if(!CONTROL.has(
+				const completed = previous.loc.start.line !== previous.loc.end.line
+					&& ['ExpressionStatement', 'VariableDeclaration'].includes(previous.type);
+
+				if(!completed && current.type !== 'ReturnStatement' && !CONTROL.has(
 					current.type
 				) && !multilineCall && previous.type !== 'IfStatement' && !endsWithBlock(previous)
 				) continue;
@@ -96,17 +102,25 @@ export default {
 					0
 					, first.loc.start.column
 				);
+
 				const line = prefix.trim() ? previous.loc.start.line : first.loc.start.line;
 				const indent = source.lines[line - 1].match(/^[\t ]*/u)[0];
 
-				context.report({ node: current, messageId: 'blank'
+				context.report({
+					node: current
+					, messageId: 'blank'
 					, fix: fixer => fixer.replaceTextRange([start, first.range[0]], `\n\n${indent}`)
 				});
 			}
 		}
 
-		return { Program: check, BlockStatement: check, SwitchCase: check
-			, ClassBody: check, StaticBlock: check, TSModuleBlock: check
+		return {
+			Program: check
+			, BlockStatement: check
+			, SwitchCase: check
+			, ClassBody: check
+			, StaticBlock: check
+			, TSModuleBlock: check
 		};
 	}
 };

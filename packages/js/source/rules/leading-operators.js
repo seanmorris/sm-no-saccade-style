@@ -14,12 +14,12 @@ const defaultOptions = [
 ];
 
 export default {
-	...baseRule,
-	meta: {
-		...baseRule.meta,
-		docs: {
-			...baseRule.meta.docs,
-			description: 'Enforce operator-first continuation lines.'
+	...baseRule
+	, meta: {
+		...baseRule.meta
+		, docs: {
+			...baseRule.meta.docs
+			, description: 'Enforce operator-first continuation lines.'
 		}
 	}
 
