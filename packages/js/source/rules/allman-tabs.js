@@ -270,6 +270,8 @@ export default {
 			, unexpectedMultilineControlOpen: 'Multiline control heads should keep the opening brace on the same line as the closing parenthesis.'
 			, unexpectedMultilineFunctionOpen: 'Multiline function heads should keep the opening brace on the same line as the closing parenthesis.'
 			, expandedBody: 'Multiline blocks need separate statement and brace lines.'
+			, attachedClause:
+				"Keep '{{clause}}' on the next line after its block, without a blank line."
 		}
 		, docs: {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.'
@@ -467,6 +469,50 @@ export default {
 			});
 		}
 
+		function checkAttachedClauses(node)
+		{
+
+			function separate(body, keyword)
+			{
+				const close = sourceCode.getLastToken(body);
+
+				if(!isBlockClose(close, sourceCode) || canCompactBody(body, sourceCode, maxLength))
+				{
+					return;
+				}
+
+				const clause = sourceCode.getTokenAfter(close);
+				const previous = sourceCode.getTokenBefore(clause, { includeComments: true });
+				const range = [previous.range[1], clause.range[0]];
+				const indent = getTokenLineIndent(sourceCode, sourceCode.getFirstToken(node));
+				const expected = `\n${indent}`;
+
+				if(sourceCode.text.slice(...range) === expected) return;
+
+				context.report({
+					node
+					, loc: clause.loc
+					, messageId: 'attachedClause'
+					, data: { clause: keyword }
+					, fix: fixer => fixer.replaceTextRange(range, expected)
+				});
+			}
+
+			if(node.type === 'IfStatement' && node.alternate)
+			{
+				separate(node.consequent, 'else');
+			}
+
+			if(node.type === 'TryStatement')
+			{
+				if(node.handler) separate(node.block, 'catch');
+
+				if(node.finalizer) separate(node.handler?.body ?? node.block, 'finally');
+			}
+
+			if(node.type === 'DoWhileStatement') separate(node.body, 'while');
+		}
+
 		function stripSpaceBeforeOpeningBrace(node)
 		{
 			const openingBrace = getOpeningBraceToken(sourceCode, node);
@@ -586,6 +632,11 @@ export default {
 				BlockStatement: stripSpaceBeforeOpeningBrace
 				, ClassBody: stripSpaceBeforeOpeningBrace
 				, SwitchStatement: stripSpaceBeforeOpeningBrace
+			},
+			{
+				IfStatement: checkAttachedClauses
+				, TryStatement: checkAttachedClauses
+				, DoWhileStatement: checkAttachedClauses
 			},
 			{
 				'Program:exit': checkClosingDelimiterIndent

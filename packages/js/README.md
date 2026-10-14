@@ -379,6 +379,23 @@ class Scene
 
 Compact bodies are allowed only when the complete construct fits on one line within the limit and the language requires its braces. Multiline heads always have multiline bodies. Optional control braces expand to standard blocks, even for an empty body. Existing braces are preserved.
 
+In multiline statements, `else`, `else if`, `catch`, `finally`, and the terminating `while` of a `do` loop start on the next line after `}`, with no blank line between them. This also applies after nested closing runs such as `}}`. Comments stay in place. A complete one-line `try` statement keeps its clauses on that line.
+
+```js
+if(ready)
+{
+	start();
+}
+else if(pending)
+{
+	wait();
+}
+else
+{
+	recover();
+}
+```
+
 ```js
 function add(){ return; };
 
@@ -470,7 +487,7 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 - `sm-no-saccade-style/leading-operators`
   Moves continuation operators to the beginning of the next line.
 - `sm-no-saccade-style/allman-tabs`
-  Enforces Allman braces for declarations and block forms, but keeps inline functions, inline class expressions, and inline object methods on the same line.
+  Enforces Allman braces for declarations and block forms, but keeps inline functions, inline class expressions, and inline object methods on the same line. Attached clauses of multiline statements start on the next line after the closing brace, without a blank line.
 - `sm-no-saccade-style/no-double-closing-gap`
   Forbids extra blank lines between delimiter-only lines: no blank lines for `open -> open` or `close -> close`, and at most one blank line for `close -> open`.
 - `sm-no-saccade-style/no-space-control-paren`

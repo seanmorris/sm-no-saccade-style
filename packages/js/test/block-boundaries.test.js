@@ -107,11 +107,100 @@ while(ready);
 after();
 `
 );
-assert.match(branches, /\t\}\} else/u);
+assert.match(branches, /\t\}\}\nelse/u);
 assert.match(branches, /\t\}\}\ncatch/u);
 assert.match(branches, /\}\nfinally/u);
 assert.match(branches, /\t\}\}\nwhile\(ready\);\n\nafter/u);
 assert.doesNotMatch(branches, /\}\n\n(?:else|catch|finally|while)/u);
+
+for(const gap of ['', ' ', '\n\n', '\n\n\n'])
+{
+	const output = await format(`if(ready)
+{
+	step();
+}${gap}else if(pending)
+{
+	wait();
+}${gap}else
+{
+	recover();
+}
+after();
+`
+	);
+	assert.match(output, /\}\nelse if\(pending\)/u);
+	assert.match(output, /\}\nelse\n\{/u);
+	assert.match(output, /\}\n\nafter\(\);/u);
+}
+
+const nestedClauses = await format(`function work()
+{
+	if(ready)
+	{
+		if(pending){ wait(); } else{ step(); }
+	} else if(retry){ recover(); } else{ stop(); }
+}
+`
+);
+assert.match(nestedClauses, /\t\t\}\n\t\telse\n\t\t\{/u);
+assert.match(nestedClauses, /\t\}\n\telse if\(retry\)/u);
+assert.match(nestedClauses, /\t\}\n\telse\n\t\{/u);
+
+const stacked = await format(`if(ready)
+	while(pending)
+	{
+		step();
+	} else recover();
+`
+);
+assert.match(stacked, /\t\}\nelse recover\(\);/u);
+
+for(const handler of ['catch(error)', 'catch'])
+{
+	const output = await format(`try
+{
+	step();
+} ${handler}
+{
+	recover();
+}
+
+finally
+{
+	cleanup();
+}
+`
+	);
+	assert.ok(output.includes(`}\n${handler}\n{`), output);
+	assert.match(output, /\}\nfinally\n\{/u);
+}
+
+assert.match(await format('try\n{\n\tstep();\n} finally{ cleanup(); }\n'), /\}\nfinally/u);
+assert.match(await format('do\n{\n\tstep();\n} while(ready);\n'), /\}\nwhile\(ready\);/u);
+
+assert.equal(
+	await format('try{ step(); } catch{ recover(); } finally{ cleanup(); }\n')
+	, 'try{ step(); } catch{ recover(); } finally{ cleanup(); }\n'
+);
+
+for(const comment of [
+	'/* Branch. */', '/* Branch. */ /* Still attached. */', '// Branch.\n'
+	, '/* Branch.\nStill attached. */'
+]){
+	const output = await format(`if(ready)\n{\n\tstep();\n} ${comment} else{ recover(); }\n`);
+	assert.ok(output.includes(`} ${comment.trimEnd()}\nelse\n{`), output);
+}
+
+const literalClauses = await format('const text = `} else {\\n} catch {`;\n');
+assert.ok(literalClauses.includes('`} else {\\n} catch {`'));
+
+const typedClauses = await format(`function work(value: boolean): void
+{
+	if(value){ step(); } else{ recover(); }
+}
+`, 'clauses.ts'
+);
+assert.match(typedClauses, /\t\}\n\telse\n\t\{/u);
 
 const comments = await format(`while(ready)
 {
