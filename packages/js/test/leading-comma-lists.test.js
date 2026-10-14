@@ -483,6 +483,7 @@ assert.doesNotThrow(() => {
 
 const mockListeners = rule.create({
 	sourceCode: {
+
 		getTokensBetween() {
 			return [];
 		}

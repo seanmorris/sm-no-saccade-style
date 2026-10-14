@@ -8,6 +8,7 @@ use SeanMorris\NoSaccadeStyle\Internal\SourceTransformer;
 
 final class NoTrailingWhitespaceFixer extends AbstractNoSaccadeFixer
 {
+
 	protected static function ruleName(): string
 	{
 		return 'no_saccade_no_trailing_whitespace';

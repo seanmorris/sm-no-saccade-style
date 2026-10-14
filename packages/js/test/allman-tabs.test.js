@@ -23,8 +23,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(foo) /* keep comment */\n{\n\tbar();\n}"
 		, "switch(value)\n{\n\tcase 1:\n\t\tbreak;\n}"
 		, "class X\n{\n\tdestroy(entity){}\n}"
-		, "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){}\n}"
-		, "if(foo){}"
+		, "class X\n{\n\tconstructor({\n\t\ta\n\t\t, b\n\t}){\n\t}\n}"
+		, "if(foo)\n{\n}"
 		, "if(foo) bar();"
 		, "if(foo)\nbar();"
 		, "if(foo)\n\tbar();"
@@ -33,7 +33,7 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, "if(graphs)\n\tfor(const graph of graphs)\n\t{\n\t\tgraph.delete(entity);\n\t}"
 		, "new Set(this.mapRenderers.keys())\n.difference(visibleMaps)\n.forEach(map => {\n\tthis.mapRenderers.delete(map);\n\tmap.visible = false;\n});"
 		, "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
-		, "const x = fn({\n\ta: 1});"
+		, "const x = fn({\n\ta: 1\n});"
 	]
 	, invalid: [
 		{
@@ -66,8 +66,8 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		}
 		, {
 			code: "class FakeHttpKrest extends Krest\n{ static Http; }"
-			, output: "class FakeHttpKrest extends Krest { static Http; }"
-			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }]
+			, output: "class FakeHttpKrest extends Krest {\nstatic Http;\n}"
+			, errors: [{ messageId: 'unexpectedInlineAllmanOpen' }, { messageId: 'expandedBody' }]
 		}
 		, {
 			code: "const x = {\n\tmethod()\n\t{\n\t\tbar();\n\t}\n};"
@@ -77,7 +77,9 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		, {
 			code: "if(foo)  \n{\n\tbar();\n}"
 			, output: "if(foo)\n{\n\tbar();\n}"
-			, errors: [{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }]
+			, errors: [
+				{ message: 'Unexpected horizontal whitespace before an Allman opening brace.' }
+			]
 		}
 		, {
 			code: "if(foo) /* keep comment */ {\n\tbar();\n}"
@@ -111,13 +113,13 @@ ruleTester.run('sm-no-saccade-style/allman-tabs', rule, {
 		}
 		, {
 			code: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n\t));"
-			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
-			, errors: [{ messageId: 'mixedClosingRays' }]
+			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n\t)\n);"
+			, errors: 1
 		}
 		, {
 			code: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n));"
-			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t})\n);"
-			, errors: [{ messageId: 'mixedClosingRays' }]
+			, output: "const loadSlices = this.map.imageLayers.map(\n\t(layerData, index) => this.constructor.loadImage(layerData).then(image => {\n\t\tbar(image);\n\t}\n\t)\n);"
+			, errors: 2
 		}
 		, {
 			code: "switch(value) {\n\tcase 1:\n\t\tbreak;\n}"

@@ -8,6 +8,7 @@ use SeanMorris\NoSaccadeStyle\Internal\SourceTransformer;
 
 final class NoDoubleClosingGapFixer extends AbstractNoSaccadeFixer
 {
+
 	protected static function ruleName(): string
 	{
 		return 'no_saccade_no_double_closing_gap';

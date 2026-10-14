@@ -2,18 +2,20 @@ import stylistic from '@stylistic/eslint-plugin';
 
 import { composeListeners, withOptions, withReportFilter } from './_compose.js';
 import { indentOptions } from './_indent-options.js';
+import { canCompactBody, DEFAULT_MAX_LENGTH, isBlockClose } from './_layout.js';
 
 const indentRule = stylistic.rules.indent;
 const noMixedSpacesAndTabsRule = stylistic.rules['no-mixed-spaces-and-tabs'];
-const MULTILINE_CONTROL_HEAD_TYPES = new Set([
-	'ForInStatement'
-	, 'ForOfStatement'
-	, 'ForStatement'
-	, 'IfStatement'
-	, 'SwitchStatement'
-	, 'WhileStatement'
-	, 'WithStatement'
-]);
+
+const MULTILINE_CONTROL_HEAD_TYPES = new Set(
+	['ForInStatement'
+		, 'ForOfStatement'
+		, 'ForStatement'
+		, 'IfStatement'
+		, 'SwitchStatement'
+		, 'WhileStatement', 'WithStatement'
+	]
+);
 
 function isInlineBody(node)
 {
@@ -65,7 +67,10 @@ function getOpeningBraceToken(sourceCode, node)
 {
 	if(node.type === 'SwitchStatement')
 	{
-		const rightParen = sourceCode.getTokenAfter(node.discriminant, (token) => token.value === ')');
+		const rightParen = sourceCode.getTokenAfter(
+			node.discriminant
+			, (token) => token.value === ')'
+		);
 
 		return sourceCode.getTokenAfter(rightParen, (token) => token.value === '{');
 	}
@@ -157,42 +162,6 @@ function getTokenLineIndent(sourceCode, token)
 	return line.match(/^[\t ]*/u)[0];
 }
 
-export function buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
-{
-	const previousLineIndent = getTokenLineIndent(sourceCode, previousToken);
-
-	if(previousLineIndent !== openingIndents[0])
-	{
-		return null;
-	}
-
-	let replacement = '';
-	let currentIndent = openingIndents[0];
-
-	for(let i = 0; i < closingTokens.length; i += 1)
-	{
-		const token = closingTokens[i];
-		const openingIndent = openingIndents[i];
-
-		if(i === 0)
-		{
-			replacement += token.value;
-			continue;
-		}
-
-		if(openingIndent === currentIndent)
-		{
-			replacement += token.value;
-			continue;
-		}
-
-		replacement += `\n${openingIndent}${token.value}`;
-		currentIndent = openingIndent;
-	}
-
-	return fixer.replaceTextRange([previousToken.range[1], closingTokens.at(-1).range[1]], replacement);
-}
-
 function isOwnLineClosingDelimiter(sourceCode, descriptor)
 {
 	if(descriptor.messageId !== 'wrongIndentation' || descriptor.node?.type !== 'Punctuator')
@@ -212,117 +181,62 @@ function isOwnLineClosingDelimiter(sourceCode, descriptor)
 	return lineIndent.length === token.loc.start.column;
 }
 
-function isLeadingChainDot(sourceCode, descriptor)
-{
-	if(descriptor.messageId !== 'wrongIndentation' || descriptor.node?.type !== 'Punctuator')
-	{
-		return false;
-	}
-
-	const token = sourceCode.getTokenByRangeStart(descriptor.node.range[0]);
-
-	if(!token || token.value !== '.')
-	{
-		return false;
-	}
-
-	const lineIndent = getTokenLineIndent(sourceCode, token);
-
-	return lineIndent.length === token.loc.start.column;
-}
-
-export function collectChainedCallbackBodyRanges(root)
-{
-	const ranges = [];
-
-	function visit(node, parent, grandparent)
-	{
-		if(!node || typeof node !== 'object')
-		{
-			return;
-		}
-
-		if(
-			node.type === 'BlockStatement'
-			&& parent?.type === 'ArrowFunctionExpression'
-			&& grandparent?.type === 'CallExpression'
-		){
-			ranges.push([node.loc.start.line, node.loc.end.line]);
-		}
-
-		for(const [key, value] of Object.entries(node))
-		{
-			if(key === 'parent')
-			{
-				continue;
-			}
-
-			if(Array.isArray(value))
-			{
-				for(const child of value)
-				{
-					if(child?.type)
-					{
-						visit(child, node, parent);
-					}
-				}
-
-				continue;
-			}
-
-			if(value?.type)
-			{
-				visit(value, node, parent);
-			}
-		}
-	}
-
-	visit(root, null, null);
-
-	return ranges;
-}
-
 export default {
 	meta: {
 		type: 'layout'
 		, fixable: 'whitespace'
-		, schema: []
+		, schema: [{
+			type: 'object'
+			, properties: {
+				maxLineLength: { type: 'integer', minimum: 40 }
+			}
+			, additionalProperties: false
+		}]
 		, messages: {
-			...indentRule.meta.messages,
-			...noMixedSpacesAndTabsRule.meta.messages,
-			expectedAllmanOpen: 'Opening brace should be on its own line.'
-			, unexpectedInlineAllmanOpen: 'Inline opening brace should stay on the same line as the head.'
+			...indentRule.meta.messages
+			, ...noMixedSpacesAndTabsRule.meta.messages
+			, expectedAllmanOpen: 'Opening brace should be on its own line.'
+			, unexpectedInlineAllmanOpen:
+				'Inline opening brace should stay on the same line as the head.'
 			, unexpectedMultilineControlOpen: 'Multiline control heads should keep the opening brace on the same line as the closing parenthesis.'
 			, unexpectedMultilineFunctionOpen: 'Multiline function heads should keep the opening brace on the same line as the closing parenthesis.'
-			, mixedClosingRays: 'Closing delimiters that belong to different opening rails should not share a line.'
+			, expandedBody: 'Multiline blocks need separate statement and brace lines.'
+			, attachedClause:
+				"Keep '{{clause}}' on the next line after its block, without a blank line."
 		}
 		, docs: {
 			description: 'Enforce Allman braces, tab indentation, and smart-tab alignment.'
 		}
 	}
+
 	, create(context) {
 		const sourceCode = context.sourceCode;
-		const chainedCallbackBodyRanges = collectChainedCallbackBodyRanges(sourceCode.ast);
+		const maxLength = context.options[0]?.maxLineLength ?? DEFAULT_MAX_LENGTH;
+		const blockIndents = new Map();
+
+		function openingIndent(token)
+		{
+			return blockIndents.get(token.range[0]) ?? getTokenLineIndent(sourceCode, token);
+		}
+
 		const filteredIndentContext = withOptions(
 			withReportFilter(
 				context,
 				(descriptor) => !isOwnLineClosingDelimiter(sourceCode, descriptor)
-					&& !isLeadingChainDot(sourceCode, descriptor)
-					&& !(
-						descriptor.messageId === 'wrongIndentation'
-						&& descriptor.loc?.start?.line
-						&& chainedCallbackBodyRanges.some(
-							([start, end]) => descriptor.loc.start.line > start && descriptor.loc.start.line < end
-						)
-					)
 			),
 			indentOptions
 		);
+
 		const indentListeners = indentRule.create(filteredIndentContext);
-		const noMixedListeners = noMixedSpacesAndTabsRule.create(withOptions(context, ['smart-tabs']));
+
+		const noMixedListeners = noMixedSpacesAndTabsRule.create(
+			withOptions(context, ['smart-tabs'])
+		);
 
 		function checkOpeningBrace(node)
 		{
+			if(canCompactBody(node, sourceCode, maxLength)) return;
+
 			const openingBrace = getOpeningBraceToken(sourceCode, node);
 
 			/* c8 ignore next 4 */
@@ -339,16 +253,16 @@ export default {
 				return;
 			}
 
-			const hasComments = sourceCode.getTokensBetween(previousToken, openingBrace, { includeComments: true }).some((token) => token.type === 'Block' || token.type === 'Line');
+			const hasComments = sourceCode.getTokensBetween(
+				previousToken
+				, openingBrace
+				, { includeComments: true }
+			).some((token) => token.type === 'Block' || token.type === 'Line');
+
 			const inlineBody = isInlineBody(node);
 			const emptyBody = isEmptyBody(node);
 			const multilineControlHead = hasMultilineControlHead(node);
 			const multilineFunctionHead = hasMultilineFunctionHead(node, previousToken);
-
-			if(emptyBody && previousToken.loc.end.line === openingBrace.loc.start.line)
-			{
-				return;
-			}
 
 			if(multilineControlHead)
 			{
@@ -363,7 +277,10 @@ export default {
 					, messageId: 'unexpectedMultilineControlOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], '')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ''
+						)
 				});
 
 				return;
@@ -382,7 +299,10 @@ export default {
 					, messageId: 'unexpectedMultilineFunctionOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], '')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ''
+						)
 				});
 
 				return;
@@ -401,7 +321,10 @@ export default {
 					, messageId: 'unexpectedInlineAllmanOpen'
 					, fix: hasComments
 						? null
-						: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], ' ')
+						: (fixer) => fixer.replaceTextRange(
+							[previousToken.range[1], openingBrace.range[0]]
+							, ' '
+						)
 				});
 
 				return;
@@ -418,8 +341,100 @@ export default {
 				, messageId: 'expectedAllmanOpen'
 				, fix: hasComments
 					? null
-					: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], '\n')
+					: (fixer) => fixer.replaceTextRange(
+						[previousToken.range[1], openingBrace.range[0]]
+						, '\n'
+					)
 			});
+		}
+
+		function checkBlockLayout(node)
+		{
+			const open = getOpeningBraceToken(sourceCode, node);
+			const owner = node.type === 'SwitchStatement' ? node : node.parent;
+			const first = sourceCode.getFirstToken(owner);
+			blockIndents.set(open.range[0], getTokenLineIndent(sourceCode, first));
+
+			if(canCompactBody(node, sourceCode, maxLength)) return;
+
+			const close = sourceCode.getLastToken(node);
+			const children = node.type === 'SwitchStatement' ? node.cases : node.body;
+			const ranges = new Map();
+
+			function separate(left, right)
+			{
+				if(left.loc.end.line !== right.loc.start.line) return;
+
+				const between = sourceCode.text.slice(left.range[1], right.range[0]);
+
+				if(between.trim()) return;
+
+				ranges.set(left.range[1], [left.range[1], right.range[0]]);
+			}
+
+			separate(open, sourceCode.getTokenAfter(open, { includeComments: true }));
+			const previous = sourceCode.getTokenBefore(close, { includeComments: true });
+
+			if(!isBlockClose(previous, sourceCode)) separate(previous, close);
+
+			for(const child of children)
+			{
+				const first = sourceCode.getFirstToken(child);
+				separate(sourceCode.getTokenBefore(first, { includeComments: true }), first);
+			}
+
+			if(!ranges.size) return;
+
+			context.report({
+				node
+				, messageId: 'expandedBody'
+				, fix: fixer =>
+					[...ranges.values()].map(range => fixer.replaceTextRange(range, '\n'))
+			});
+		}
+
+		function checkAttachedClauses(node)
+		{
+
+			function separate(body, keyword)
+			{
+				const close = sourceCode.getLastToken(body);
+
+				if(!isBlockClose(close, sourceCode) || canCompactBody(body, sourceCode, maxLength))
+				{
+					return;
+				}
+
+				const clause = sourceCode.getTokenAfter(close);
+				const previous = sourceCode.getTokenBefore(clause, { includeComments: true });
+				const range = [previous.range[1], clause.range[0]];
+				const indent = getTokenLineIndent(sourceCode, sourceCode.getFirstToken(node));
+				const expected = `\n${indent}`;
+
+				if(sourceCode.text.slice(...range) === expected) return;
+
+				context.report({
+					node
+					, loc: clause.loc
+					, messageId: 'attachedClause'
+					, data: { clause: keyword }
+					, fix: fixer => fixer.replaceTextRange(range, expected)
+				});
+			}
+
+			if(node.type === 'IfStatement' && node.alternate)
+			{
+				separate(node.consequent, 'else');
+			}
+
+			if(node.type === 'TryStatement')
+			{
+				if(node.handler) separate(node.block, 'catch');
+
+				if(node.finalizer) separate(node.handler?.body ?? node.block, 'finally');
+			}
+
+			if(node.type === 'DoWhileStatement') separate(node.body, 'while');
 		}
 
 		function stripSpaceBeforeOpeningBrace(node)
@@ -456,93 +471,67 @@ export default {
 				node
 				, loc: openingBrace.loc
 				, message: 'Unexpected horizontal whitespace before an Allman opening brace.'
-				, fix: (fixer) => fixer.replaceTextRange([previousToken.range[1], openingBrace.range[0]], between.replace(/[ \t]+\n([ \t]*)$/u, '\n$1'))
+				, fix: (fixer) => fixer.replaceTextRange(
+					[previousToken.range[1], openingBrace.range[0]]
+					, between.replace(/[ \t]+\n([ \t]*)$/u, '\n$1')
+				)
 			});
 		}
 
 		function checkClosingDelimiterIndent()
 		{
-			const tokens = sourceCode.ast.tokens;
 			const stack = [];
+			const pairs = new Map();
 
-			for(let i = 0; i < tokens.length; i += 1)
+			for(const token of sourceCode.ast.tokens)
 			{
-				const token = tokens[i];
+				if(token.type !== 'Punctuator') continue;
 
-				if('([{'.includes(token.value))
+				if(['(', '[', '{'].includes(token.value))
 				{
 					stack.push(token);
 					continue;
 				}
 
-				if(!')]}'.includes(token.value))
-				{
-					continue;
-				}
+				if(![')', ']', '}'].includes(token.value)) continue;
 
-				const openingToken = stack.pop();
+				const opening = stack.pop();
 
-				const lineIndent = getTokenLineIndent(sourceCode, token);
+				if(!opening) continue;
 
-				if(lineIndent.length !== token.loc.start.column)
-				{
-					continue;
-				}
+				pairs.set(token, opening);
 
-				const previousToken = tokens[i - 1];
+				if(opening.loc.start.line === token.loc.start.line) continue;
 
-				const closingTokens = [token];
-				const openingTokens = [openingToken];
-				const tempStack = stack.slice();
+				const previous = sourceCode.getTokenBefore(token, { includeComments: true });
+				const expected = openingIndent(opening);
+				const range = [previous.range[1], token.range[0]];
+				const gap = sourceCode.text.slice(...range);
 
-				for(let j = i + 1; j < tokens.length; j += 1)
-				{
-					const nextToken = tokens[j];
+				if(isBlockClose(token, sourceCode) && isBlockClose(previous, sourceCode)
+					&& !gap.includes('\n')
+				) continue;
 
-					if(nextToken.loc.start.line !== token.loc.start.line || !')]}'.includes(nextToken.value))
-					{
-						break;
-					}
+				const sameRail = pairs.has(previous)
+					&& openingIndent(pairs.get(previous)) === expected;
 
-					const nextOpeningToken = tempStack.pop();
+				if(sameRail && !gap.includes('\n')) continue;
 
-					closingTokens.push(nextToken);
-					openingTokens.push(nextOpeningToken);
-				}
+				const prefix = sourceCode.lines[token.loc.start.line - 1].slice(
+					0
+					, token.loc.start.column
+				);
 
-				const openingIndents = openingTokens.map((candidate) => getTokenLineIndent(sourceCode, candidate));
-				const distinctOpeningIndents = [...new Set(openingIndents)];
+				if(prefix === expected) continue;
 
-				if(distinctOpeningIndents.length > 1)
-				{
-					context.report({
-						loc: token.loc
-						, messageId: 'mixedClosingRays'
-						, fix: (fixer) => buildMixedClosingRailFix(sourceCode, fixer, previousToken, closingTokens, openingIndents)
-					});
-
-					continue;
-				}
-
-				const expectedIndent = openingTokens
-					.map((candidate) => getTokenLineIndent(sourceCode, candidate))
-					.sort((left, right) => left.length - right.length)[0];
-
-				if(openingTokens.some((candidate) => candidate.loc.start.line === token.loc.start.line) || lineIndent === expectedIndent)
-				{
-					continue;
-				}
+				if(token.value === '}' && blockIndents.has(opening.range[0])
+					&& previous.loc.end.line === token.loc.start.line
+				) continue;
 
 				context.report({
 					loc: token.loc
 					, message: `Closing '${token.value}' should align with its opening rail.`
-					, fix: (fixer) => fixer.replaceTextRange(
-						[
-							token.range[0] - token.loc.start.column
-							, token.range[0]
-						],
-						expectedIndent
-					)
+					, fix: fixer => fixer.replaceTextRange(range, `\n${expected}`)
 				});
 			}
 		}
@@ -556,9 +545,19 @@ export default {
 				, SwitchStatement: checkOpeningBrace
 			},
 			{
+				BlockStatement: checkBlockLayout
+				, ClassBody: checkBlockLayout
+				, SwitchStatement: checkBlockLayout
+			},
+			{
 				BlockStatement: stripSpaceBeforeOpeningBrace
 				, ClassBody: stripSpaceBeforeOpeningBrace
 				, SwitchStatement: stripSpaceBeforeOpeningBrace
+			},
+			{
+				IfStatement: checkAttachedClauses
+				, TryStatement: checkAttachedClauses
+				, DoWhileStatement: checkAttachedClauses
 			},
 			{
 				'Program:exit': checkClosingDelimiterIndent

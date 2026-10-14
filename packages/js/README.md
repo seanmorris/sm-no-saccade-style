@@ -67,11 +67,7 @@ if (motionParent
 
 ```js
 const visibleMaps = maps
-	.filter(map =>
-		map.visible
-		&& map.ready
-		|| map === activeMap
-	)
+	.filter(map => map.visible && map.ready || map === activeMap)
 	.map(map => ({
 		key: map.id
 		, label: map.name
@@ -82,18 +78,12 @@ const visibleMaps = maps
 			, map.height + marginY
 		]
 		, layers: map.layers
-			.filter(layer =>
-				layer.visible
-				&& layer.depth > minDepth
-			)
+			.filter(layer => layer.visible && layer.depth > minDepth)
 			.map(layer => ({
 				name: layer.name
 				, opacity: layer.opacity
 				, tiles: layer.tiles
-					.filter(tile =>
-						tile.index !== 0
-						&& tile.visible
-					)
+					.filter(tile => tile.index !== 0 && tile.visible)
 					.map(tile => ({
 						id: tile.id
 						, src: tile.src
@@ -130,13 +120,109 @@ export default [
 
 The recommended config works for both JavaScript and TypeScript.
 
+## Line length and separation
+
+The recommended preset uses a 100-column limit and four-column tab stops. It wraps code at token boundaries and reports lines that still need attention. Multiline literals and literal payloads too long to fit are exempt by default; their contents are never changed.
+
+A run of more than 10 nonblank code lines produces a warning suggesting semantic separation. The rule does not choose where to insert blank lines. Comment-only lines and multiline literal contents break the run.
+
+Override the limits in flat config:
+
+```js
+export default [
+    ...smNoSaccadeStyle.configs.recommended,
+    {
+        rules: {
+            'sm-no-saccade-style/max-line-length': ['error', { max: 100, tabWidth: 4 }],
+            'sm-no-saccade-style/allman-tabs': ['error', { maxLineLength: 100 }],
+            'sm-no-saccade-style/object-layout': ['error', { max: 100 }],
+            'sm-no-saccade-style/max-unseparated-lines': ['warn', { max: 10 }],
+        },
+    },
+];
+```
+
+Set `ignoreLiterals: false` on `max-line-length` to report long literal lines too. The formatter still leaves literal contents unchanged.
+
+To require a consistent layout within each parameter or argument list, enable
+`sm-no-saccade-style/parameter-layout`. Once a list has a break between items,
+every item starts on its own line below the opening parenthesis, using leading
+commas. Short, comment-free calls compact when the complete call fits the limit.
+Explicitly expanded function parameter lists remain vertical. Expanded arrays,
+objects, and argument wraps inside template interpolations retain their layout.
+Multiline callback bodies and literal contents remain intact. A callback body
+alone does not force the surrounding argument list to expand.
+
+```js
+{
+    rules: {
+        'sm-no-saccade-style/parameter-layout': ['error', { max: 120 }],
+        'sm-no-saccade-style/max-line-length': ['error', { max: 120 }],
+        'sm-no-saccade-style/allman-tabs': ['error', { maxLineLength: 120 }],
+        'sm-no-saccade-style/object-layout': ['error', { max: 120 }],
+    },
+}
+```
+
+Classes, functions, and methods have a blank line before their declaration. Attached JSDoc and decorators stay with the declaration; the blank line goes before them. The same applies to the first class method, object methods, and assigned functions, including property assignments such as `window.run = () => { ... }`. Inline callback expressions stay with their enclosing expression.
+
 ## Style Guide
 
 This section describes how to lay out code so it already matches the formatter and lint rules this package enforces.
 
+### Statement groups and long calls
+
+Keep related assignments together. Insert a blank line before a following control statement or multiline call, and after a completed block. This includes a nested closing run such as `}}` and a callback ending in `});`. Do not insert a blank line before another closing brace or an attached `else`, `elseif` (PHP), `catch`, `finally`, or `do…while` clause. Leading comments stay with their statements, and trailing comments stay with their closing braces. Directly nested controls stay together.
+
+Separate completed multiline expressions and variable declarations from the next statement, including object assignments and callback calls followed by another argument. A `return` after other work also gets a preceding blank line. Complete compact function bodies remain on one line.
+
+Wrap a long call at its outer argument list before splitting a nested call that fits. Each argument keeps its expression intact where possible, and the outer closing parenthesis returns to the opening line's indentation:
+
+When a control header shares a long line with its unbraced body, separate the header first. Stacked headers and their bodies use the same indentation. Then wrap the containing call before its arguments' subexpressions.
+
+```js
+entities[object.id] = registry.create(
+	...this.factories[className](object, map)
+);
+```
+
+This also applies when an argument contains a compact object:
+
+```js
+window.dispatchEvent(
+	Object.assign(new Event('gamepaddisconnected'), {gamepad: menuPads[0]})
+);
+```
+
+When a callback returns an object, expand that object's properties before splitting short expressions inside them. Callback bodies, comments, and literal contents stay intact when an enclosing call needs to wrap.
+
+```js
+menuPads[0].buttons = Array.from({length: 17}, (_, i) => ({
+	pressed: buttons.includes(i)
+	, value: buttons.includes(i) ? 1 : 0
+}));
+```
+
+The separate warning for runs longer than 10 lines still asks for human judgment when no syntactic boundary determines a useful break.
+
+### Parameters, calls, and loop headers
+
+Use one space after commas in function definitions and calls, and after semicolons in `for` headers. This also covers methods, arrow functions, constructor calls, and TypeScript signatures. Multiline headers keep their line breaks; no trailing spaces are added.
+
+```js
+function add(left, right){ return left + right; }
+
+for(let i = 0; i < count; i++)
+{
+	add(i, count);
+}
+```
+
 ### Lists and records
 
 Keep commas on the next line for multiline arrays, objects, object patterns, and array patterns.
+
+Expanded objects and object patterns put every property on its own line, including the first property immediately below `{`. The closing brace aligns with the opening line. Compact nested objects may remain inline. The `object-layout` rule uses the same configurable line limit for expanding long object assignments and returned objects.
 
 ```js
 const point = {
@@ -169,7 +255,7 @@ const list = [
 ];
 ```
 
-Short grouped rows are allowed when they stay compact.
+Short grouped array rows are allowed when they stay compact. Expanded objects always use one property per line.
 
 ```js
 const uv = [
@@ -209,6 +295,13 @@ const services = {
 
 ### Continuation operators
 
+Put spaces around assignment operators and default-value `=`, arrow `=>`, ternary `? :`, and string-concatenation `+` on the same line. Concatenation is recognized when an operand is a string literal, template literal, or another recognized concatenation. Existing alignment spaces and line breaks are preserved; other arithmetic and comparison spacing remains as written.
+
+```js
+const state = (value = 0) => value ? 'ready' : 'pending';
+total += value;
+```
+
 Put multiline continuation operators at the beginning of the continued line.
 
 ```js
@@ -222,7 +315,7 @@ const total = subtotal
 	- discount;
 ```
 
-Ternary markers also lead the continued line.
+Keep short ternaries inline. When a ternary spans multiple lines, both `?` and `:` lead equally indented continuation lines. Partially wrapped ternaries compact when they fit, or expand both branches. Long concatenations wrap at their own operators before splitting a short nested ternary.
 
 ```js
 const label = isReady
@@ -308,19 +401,40 @@ class Scene
 }
 ```
 
-Single-line function, method, and class bodies are allowed to stay compact.
+Compact bodies are allowed only when the complete construct fits on one line within the limit and the language requires its braces. Multiline heads always have multiline bodies. Optional control braces expand to standard blocks, even for an empty body. Existing braces are preserved.
+
+In multiline statements, `else`, `else if`, `catch`, `finally`, and the terminating `while` of a `do` loop start on the next line after `}`, with no blank line between them. This also applies after nested closing runs such as `}}`. Comments stay in place. A complete one-line `try` statement keeps its clauses on that line.
+
+```js
+if(ready)
+{
+	start();
+}
+else if(pending)
+{
+	wait();
+}
+else
+{
+	recover();
+}
+```
 
 ```js
 function add(){ return; };
 
-class NullLogger { info(){ return; }; };
+class Counter { value = 0; }
 
-if(disabled){}
+try{ work(); } catch(error){ report(error); }
+
+if(disabled)
+{
+}
 ```
 
 ### Delimiter rails
 
-Do not add extra blank lines between adjacent delimiter-only lines.
+Multiline `()`, `{}`, and `[]` close at the indentation level of the line where they opened. Use a separate closing line when needed. Do not add extra blank lines between adjacent delimiter-only lines.
 
 ```js
 const config = {
@@ -331,7 +445,7 @@ const config = {
 };
 ```
 
-Do not stack closing delimiters from different indentation rails on the same line when they belong to different openings.
+Do not stack closing delimiters from different indentation rails on the same line when they belong to different openings. Nested block braces are the exception: existing runs such as `}}` and `} }` stay together at the first closing brace's indentation. A closing run still needs a blank line before the next statement, unless another `}` or an attached clause follows. Object, array, and call delimiters keep their own indentation rails.
 
 ```js
 const loadSlices = layers.map(
@@ -379,6 +493,21 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 
 ## Rules
 
+- `sm-no-saccade-style/statement-spacing`
+  Separates control flow and multiline call statements from preceding work, and completed blocks and multiline statements from following statements. Adds a blank line before a return following other work. Comments stay attached; connected clauses, directly nested controls, and consecutive closing braces stay together.
+- `sm-no-saccade-style/expression-spacing`
+  Spaces assignments, defaults, arrows, and ternaries without changing existing alignment or line breaks.
+- `sm-no-saccade-style/object-layout`
+  Puts every property of an expanded object or object pattern on its own line. Expands long object assignments and returned objects at a configurable limit, defaulting to 100 columns.
+- `sm-no-saccade-style/separator-spacing`
+  Spaces parameter and argument commas and `for` header semicolons, preserving comments and line breaks.
+- `sm-no-saccade-style/declaration-spacing`
+  Adds a blank line before declarations, including their documentation and decorators.
+- `sm-no-saccade-style/max-line-length`
+  Wraps code at safe token boundaries and reports lines over the configurable 100-column limit.
+- `sm-no-saccade-style/max-unseparated-lines`
+  Warns on more than 10 consecutive code lines without semantic separation. It has no automatic fix.
+
 - `sm-no-saccade-style/leading-comma-lists`
   Moves commas to the left rail for multiline arrays and objects.
 - `sm-no-saccade-style/final-comma-line`
@@ -386,7 +515,7 @@ Avoid trailing spaces and keep one final newline at the end of each file.
 - `sm-no-saccade-style/leading-operators`
   Moves continuation operators to the beginning of the next line.
 - `sm-no-saccade-style/allman-tabs`
-  Enforces Allman braces for declarations and block forms, but keeps inline functions, inline class expressions, and inline object methods on the same line.
+  Enforces Allman braces for declarations and block forms, but keeps inline functions, inline class expressions, and inline object methods on the same line. Attached clauses of multiline statements start on the next line after the closing brace, without a blank line.
 - `sm-no-saccade-style/no-double-closing-gap`
   Forbids extra blank lines between delimiter-only lines: no blank lines for `open -> open` or `close -> close`, and at most one blank line for `close -> open`.
 - `sm-no-saccade-style/no-space-control-paren`

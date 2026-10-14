@@ -21,6 +21,7 @@ use SeanMorris\NoSaccadeStyle\Fixers;
 
 final class FixerTest extends TestCase
 {
+
 	public function testAllmanTabsFixer(): void
 	{
 		$this->assertSame(
@@ -50,7 +51,10 @@ PHP
 		$this->assertSame(
 			<<<'PHP'
 <?php
-class FakeHttpKrest extends Krest { protected static $Http; }
+class FakeHttpKrest extends Krest
+{
+	protected static $Http;
+}
 
 class InlineFakeHttpKrest extends Krest { protected static $Http; }
 
@@ -286,7 +290,7 @@ PHP
 		);
 	}
 
-	public function testAllmanTabsFixerDoesNotSplitNestedCallClosersAfterDeeperContent(): void
+	public function testAllmanTabsFixerSplitsNestedCallClosersOntoTheirOpeningIndent(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
@@ -295,8 +299,8 @@ $response = Http::post(
 	$endpoint
 	, json_encode([
 		'ksql' => $string
-	]
-));
+	])
+);
 
 PHP
 			, $this->apply(
@@ -315,7 +319,7 @@ PHP
 		);
 	}
 
-	public function testAllmanTabsFixerRejoinsSplitNestedCallClosersAfterListCloser(): void
+	public function testAllmanTabsFixerPreservesNestedCallClosingIndents(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
@@ -324,8 +328,8 @@ $response = Http::post(
 	$endpoint
 	, json_encode([
 		'ksql' => $string
-	]
-));
+	])
+);
 
 PHP
 			, $this->apply(
@@ -381,6 +385,7 @@ function strings($name)
 PHP
 			, $once
 		);
+
 		$this->assertSame($once, $this->apply(new AllmanTabsFixer(), $once));
 	}
 
@@ -439,15 +444,12 @@ PHP
 		);
 	}
 
-	public function testRecommendedCustomFixersUseLeadingCommasInVerticalCallArguments(): void
+	public function testRecommendedCustomFixersCompactShortVerticalCalls(): void
 	{
 		$this->assertSame(
 			<<<'PHP'
 <?php
-fwrite(STDERR, sprintf(
-	"Timed out waiting for: %s\n"
-	, implode(', ', array_keys($services))
-));
+fwrite(STDERR, sprintf("Timed out waiting for: %s\n", implode(', ', array_keys($services))));
 
 PHP
 			, $this->applyMany(
@@ -959,6 +961,7 @@ $ready = $loaded /* before operator */ &&
 	$valid;
 
 PHP;
+
 		$once = $this->applyMany($this->recommendedCustomFixers(), $input);
 
 		$this->assertSame($this->commentTexts($input), $this->commentTexts($once));
@@ -1036,7 +1039,8 @@ PHP
 		$this->assertArrayHasKey(Fixers::LEADING_OPERATORS, $config->getRules());
 		$this->assertArrayHasKey('multiline_whitespace_before_semicolons', $config->getRules());
 		$this->assertArrayHasKey('semicolon_after_instruction', $config->getRules());
-		$this->assertCount(7, $config->getCustomFixers());
+		$this->assertArrayHasKey(Fixers::SEPARATOR_SPACING, $config->getRules());
+		$this->assertCount(10, $config->getCustomFixers());
 	}
 
 	public function testCustomFixersExposeMetadata(): void
@@ -1049,6 +1053,9 @@ PHP
 			, Fixers::NO_DOUBLE_CLOSING_GAP
 			, Fixers::NO_SPACE_CONTROL_PAREN
 			, Fixers::NO_TRAILING_WHITESPACE
+			, Fixers::DECLARATION_SPACING
+			, Fixers::SEPARATOR_SPACING
+			, Fixers::STATEMENT_SPACING
 		];
 
 		foreach(Fixers::all() as $index => $fixer)

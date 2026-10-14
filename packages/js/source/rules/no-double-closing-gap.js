@@ -25,10 +25,12 @@ export default {
 			unexpectedDelimiterGap: 'Unexpected extra blank lines between structural delimiters.'
 		}
 	}
+
 	, create(context) {
 		const sourceCode = context.sourceCode;
 
 		return {
+
 			'Program:exit'() {
 				const tokens = sourceCode.getTokens(sourceCode.ast);
 

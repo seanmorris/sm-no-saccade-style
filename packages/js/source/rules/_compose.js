@@ -13,6 +13,7 @@ export function withReportFilter(context, filter)
 {
 	return Object.create(context, {
 		report: {
+
 			value(descriptor) {
 				if(filter(descriptor) === false)
 				{
@@ -42,6 +43,7 @@ export function composeListeners(...listenerMaps)
 			}
 
 			const previous = merged[selector];
+
 			merged[selector] = (node) => {
 				previous(node);
 				handler(node);

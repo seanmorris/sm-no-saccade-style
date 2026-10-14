@@ -10,6 +10,7 @@ use PhpCsFixer\Finder;
 
 final class ConfigFactory
 {
+
 	public static function recommended(?iterable $finder = null): ConfigInterface
 	{
 		$finder ??= Finder::create()
@@ -23,16 +24,20 @@ final class ConfigFactory
 			->setIndent("\t")
 			->setLineEnding("\n")
 			->setRules([
-				Fixers::LEADING_COMMA_LISTS => true
+				Fixers::DECLARATION_SPACING => true
+				, Fixers::LEADING_COMMA_LISTS => true
 				, Fixers::FINAL_COMMA_LINE => ['mode' => 'forbid']
 				, Fixers::LEADING_OPERATORS => true
 				, Fixers::ALLMAN_TABS => true
 				, Fixers::NO_DOUBLE_CLOSING_GAP => true
 				, Fixers::NO_SPACE_CONTROL_PAREN => true
 				, Fixers::NO_TRAILING_WHITESPACE => true
+				, Fixers::SEPARATOR_SPACING => true
+				, Fixers::STATEMENT_SPACING => true
 				, 'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line']
 				, 'semicolon_after_instruction' => true
 				, 'single_blank_line_at_eof' => true
+				, 'concat_space' => ['spacing' => 'one']
 			])
 			->setFinder($finder);
 	}

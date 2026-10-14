@@ -12,6 +12,7 @@ use PhpCsFixer\Tokenizer\Tokens;
 
 abstract class AbstractNoSaccadeFixer extends AbstractFixer
 {
+
 	final public function getName(): string
 	{
 		return 'SeanMorris/' . static::ruleName();

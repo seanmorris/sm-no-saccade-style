@@ -11,13 +11,9 @@ const DEFAULT_OPTIONS = {
 
 };
 
-const SUPPORTED_TYPES = new Set([
-	'ArrayExpression'
-	, 'ArrayPattern'
-	, 'ObjectExpression'
-	, 'ObjectPattern'
-
-]);
+const SUPPORTED_TYPES = new Set(
+	['ArrayExpression', 'ArrayPattern', 'ObjectExpression', 'ObjectPattern']
+);
 
 function buildFinalCommaLineFix(sourceCode, fixer, commaToken, closerToken, anchorToken)
 {
@@ -78,10 +74,12 @@ export default {
 			}
 		]
 		, messages: {
-			expectedFinalCommaLine: 'Final comma must be on its own line before the closing delimiter.'
+			expectedFinalCommaLine:
+				'Final comma must be on its own line before the closing delimiter.'
 			, unexpectedFinalCommaLine: 'Final comma-only line is not allowed.'
 		}
 	}
+
 	, create(context) {
 		const sourceCode = context.sourceCode;
 		const options = { ...DEFAULT_OPTIONS, ...(context.options[0] || {}) };
@@ -125,8 +123,19 @@ export default {
 								: 'expectedFinalCommaLine'
 						, fix: canFix
 							? options.mode === 'forbid'
-								? (fixer) => buildRemoveTrailingCommaFix(sourceCode, fixer, tokenBeforeCloser, closerToken)
-								: (fixer) => buildFinalCommaLineFix(sourceCode, fixer, tokenBeforeCloser, closerToken, lastItemToken)
+								? (fixer) => buildRemoveTrailingCommaFix(
+									sourceCode
+									, fixer
+									, tokenBeforeCloser
+									, closerToken
+								)
+								: (fixer) => buildFinalCommaLineFix(
+									sourceCode
+									, fixer
+									, tokenBeforeCloser
+									, closerToken
+									, lastItemToken
+								)
 							: null
 					});
 
@@ -139,20 +148,31 @@ export default {
 						node: items[items.length - 1]
 						, loc: tokenBeforeCloser.loc
 						, messageId: 'unexpectedFinalCommaLine'
-						, fix: (fixer) => buildRemoveTrailingCommaFix(sourceCode, fixer, tokenBeforeCloser, closerToken)
+						, fix: (fixer) => buildRemoveTrailingCommaFix(
+							sourceCode
+							, fixer
+							, tokenBeforeCloser
+							, closerToken
+						)
 					});
 				}
 
 				return;
 			}
 
-			if(options.mode === 'require' && closerToken.loc.start.line > lastItemToken.loc.end.line)
-			{
+			if(options.mode === 'require' && closerToken.loc.start.line > lastItemToken.loc.end
+				.line
+			){
 				context.report({
 					node: closerToken
 					, loc: closerToken.loc
 					, messageId: 'expectedFinalCommaLine'
-					, fix: (fixer) => buildInsertFinalCommaFix(sourceCode, fixer, closerToken, lastItemToken)
+					, fix: (fixer) => buildInsertFinalCommaFix(
+						sourceCode
+						, fixer
+						, closerToken
+						, lastItemToken
+					)
 				});
 			}
 		}

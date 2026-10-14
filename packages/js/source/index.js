@@ -9,62 +9,85 @@ import leadingOperators from './rules/leading-operators.js';
 import noDoubleClosingGap from './rules/no-double-closing-gap.js';
 import noSpaceControlParen from './rules/no-space-control-paren.js';
 import noTrailingWhitespace from './rules/no-trailing-whitespace.js';
+import declarationSpacing from './rules/declaration-spacing.js';
+import maxLineLength from './rules/max-line-length.js';
+import maxUnseparatedLines from './rules/max-unseparated-lines.js';
+import separatorSpacing from './rules/separator-spacing.js';
+import statementSpacing from './rules/statement-spacing.js';
+import parameterLayout from './rules/parameter-layout.js';
+import expressionSpacing from './rules/expression-spacing.js';
+import objectLayout from './rules/object-layout.js';
 
 const plugin = {
 	meta: {
-		name: 'sm-no-saccade-style',
-	},
-	rules: {
-		'allman-tabs': allmanTabs,
-		'final-comma-line': finalCommaLine,
-		'leading-comma-lists': leadingCommaLists,
-		'leading-operators': leadingOperators,
-		'no-double-closing-gap': noDoubleClosingGap,
-		'no-space-control-paren': noSpaceControlParen,
-		'no-trailing-whitespace': noTrailingWhitespace,
-	},
-	configs: {},
+		name: 'sm-no-saccade-style'
+	}
+	, rules: {
+		'expression-spacing': expressionSpacing
+		, 'object-layout': objectLayout
+		, 'parameter-layout': parameterLayout
+		, 'statement-spacing': statementSpacing
+		, 'separator-spacing': separatorSpacing
+		, 'declaration-spacing': declarationSpacing
+		, 'max-line-length': maxLineLength
+		, 'max-unseparated-lines': maxUnseparatedLines
+		, 'allman-tabs': allmanTabs
+		, 'final-comma-line': finalCommaLine
+		, 'leading-comma-lists': leadingCommaLists
+		, 'leading-operators': leadingOperators
+		, 'no-double-closing-gap': noDoubleClosingGap
+		, 'no-space-control-paren': noSpaceControlParen
+		, 'no-trailing-whitespace': noTrailingWhitespace
+	}
+	, configs: {}
 };
 
 plugin.configs.recommended = [
 	{
 		plugins: {
-			'sm-no-saccade-style': plugin,
-			'@stylistic': stylistic,
-		},
-		rules: {
-			'sm-no-saccade-style/leading-comma-lists': 'error',
-			'sm-no-saccade-style/final-comma-line': ['error', { mode: 'forbid' }],
-			'sm-no-saccade-style/leading-operators': 'error',
-			'sm-no-saccade-style/allman-tabs': 'error',
-			'sm-no-saccade-style/no-double-closing-gap': 'error',
-			'sm-no-saccade-style/no-space-control-paren': 'error',
-			'sm-no-saccade-style/no-trailing-whitespace': 'error',
-			'@stylistic/comma-style': ['error', 'first', {
+			'sm-no-saccade-style': plugin
+			, '@stylistic': stylistic
+		}
+		, rules: {
+			'sm-no-saccade-style/expression-spacing': 'error'
+			, 'sm-no-saccade-style/object-layout': 'error'
+			, 'sm-no-saccade-style/statement-spacing': 'error'
+			, 'sm-no-saccade-style/separator-spacing': 'error'
+			, 'sm-no-saccade-style/declaration-spacing': 'error'
+			, 'sm-no-saccade-style/max-line-length': ['error', { max: 100 }]
+			, 'sm-no-saccade-style/max-unseparated-lines': ['warn', { max: 10 }]
+			, 'sm-no-saccade-style/leading-comma-lists': 'error'
+			, 'sm-no-saccade-style/final-comma-line': ['error', { mode: 'forbid' }]
+			, 'sm-no-saccade-style/leading-operators': 'error'
+			, 'sm-no-saccade-style/allman-tabs': 'error'
+			, 'sm-no-saccade-style/no-double-closing-gap': 'error'
+			, 'sm-no-saccade-style/no-space-control-paren': 'error'
+			, 'sm-no-saccade-style/no-trailing-whitespace': 'error'
+			, '@stylistic/comma-style': ['error', 'first', {
 				exceptions: {
-					ArrayExpression: true,
-					ArrayPattern: true,
-					ObjectExpression: true,
-					ObjectPattern: true,
-				},
-			}],
-			'@stylistic/operator-linebreak': ['error', 'before', {
+					ArrayExpression: true
+					, ArrayPattern: true
+					, ObjectExpression: true
+					, ObjectPattern: true
+				}
+			}]
+			, '@stylistic/operator-linebreak': ['error', 'before', {
 				overrides: {
-					'?': 'before',
-					':': 'before',
-				},
-			}],
-			'@stylistic/semi': ['error', 'always'],
-			'@stylistic/semi-style': ['error', 'last'],
-			'@stylistic/eol-last': ['error', 'always'],
-		},
-	},
-	{
-		files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
-		languageOptions: {
-			parser: tsParser,
-		},
-	},
+					'?': 'before'
+					, ':': 'before'
+				}
+			}]
+			, '@stylistic/semi': ['error', 'always']
+			, '@stylistic/semi-style': ['error', 'last']
+			, '@stylistic/eol-last': ['error', 'always']
+		}
+	}
+	, {
+		files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts']
+		, languageOptions: {
+			parser: tsParser
+		}
+	}
 ];
 
 export const recommended = plugin.configs.recommended;
