@@ -355,7 +355,7 @@ $state = json_encode([
 ]);
 ```
 
-Short grouped rows in indexed arrays are allowed when they stay compact.
+Expanded indexed arrays also start their first item below the opening bracket and align the closing bracket with the opening line. This applies when the first item is itself a multiline constructor or callback. Short grouped rows stay grouped, short inline arrays stay inline, and explicitly expanded arrays stay expanded. The same boundaries apply to `array()` and unkeyed destructuring.
 
 ```php
 <?php
@@ -507,7 +507,7 @@ For multiline function signatures with return types, the brace follows the compl
 
 Place a closure's PHPDoc above its complete assignment, and keep `$callback = function...` together when the head fits. This avoids indenting the entire closure as an assignment continuation. Documentation between `=` and a standalone closure is moved above the assignment without changing its contents.
 
-The companion linter warns about directly passed, documented multiline callbacks with `documented-callback`. It suggests assigning a descriptive local variable first. It does not perform that refactoring or invent variable names.
+The companion linter warns about documented closures and arrow functions passed directly as arguments or embedded in a `??` fallback with `documented-callback`. It suggests assigning a descriptive local variable first, with the PHPDoc above that assignment. Named callbacks and undocumented inline callbacks do not trigger this warning. The linter does not extract callbacks automatically: choosing a name and moving a fallback can affect variable capture or evaluation timing.
 
 ```php
 <?php

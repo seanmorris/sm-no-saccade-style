@@ -248,6 +248,83 @@ PHP;
 		$this->format($code);
 	}
 
+	public function testDocumentedFallbackArrowFunctionsSuggestANamedLocal(): void
+	{
+		$code = <<<'PHP'
+<?php
+$this->reader = $reader ??
+    /**
+     * Read an asset through PHP filesystem and stream support.
+     * @param string $path File or stream-wrapper URL requested by the asset cache.
+     * @return string|false Complete bytes, or false when the source cannot be read.
+     */
+    static fn($path) => file_get_contents($path);
+PHP;
+
+		$warnings = $this->callbackWarnings($code);
+		self::assertCount(1, $warnings);
+		self::assertSame(8, $warnings[0]['line']);
+		self::assertSame('warning', $warnings[0]['severity']);
+		self::assertStringContainsString('named local', $warnings[0]['message']);
+		$this->format($code);
+	}
+
+	public function testDocumentedFallbackClosuresPreserveLazyEvaluation(): void
+	{
+		$code = <<<'PHP'
+<?php
+$reader = supplied() ?? /** Read the requested path. */ function($path) use ($root) {
+    return read($root, $path);
+};
+PHP;
+
+		self::assertCount(1, $this->callbackWarnings($code));
+		$output = $this->format($code);
+		self::assertStringContainsString('supplied() ??', $output);
+		self::assertCount(1, $this->callbackWarnings($output));
+	}
+
+	public function testDocumentedArrowArgumentsAlsoSuggestANamedLocal(): void
+	{
+		$code = <<<'PHP'
+<?php
+register(
+    /** Read the requested path. @return string|false File contents. */
+    static fn($path) => file_get_contents($path)
+);
+PHP;
+
+		self::assertCount(1, $this->callbackWarnings($code));
+		$this->format($code);
+	}
+
+	public function testNamedAndUndocumentedFallbackCallbacksDoNotWarn(): void
+	{
+		$code = <<<'PHP'
+<?php
+/** Read the requested path. @return string|false File contents. */
+$defaultReader = static fn($path) => file_get_contents($path);
+$this->reader = $reader ?? $defaultReader;
+$other = $reader ?? static fn($path) => file_get_contents($path);
+register(static fn($path) => file_get_contents($path));
+/** Explain the choice of a reader, not the callback. */
+$choice = $reader ?? static fn($path) => file_get_contents($path);
+PHP;
+
+		self::assertSame([], $this->callbackWarnings($code));
+		self::assertSame([], $this->callbackWarnings($this->format($code)));
+	}
+
+	private function callbackWarnings(string $code): array
+	{
+		return array_values(
+			array_filter(Diagnostics::analyze($code), static fn(array $row): bool => $row[
+				'rule'
+			] === 'documented-callback'
+			)
+		);
+	}
+
 	private function format(string $input): string
 	{
 		$config = ConfigFactory::recommended([]);

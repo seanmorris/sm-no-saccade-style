@@ -115,7 +115,8 @@ PHP
 
 	public function testInlineTrailingCommentsStillSeparateTheNextStatement(): void
 	{
-		foreach(['/* Done. */', '/* Done. */ /* Also done. */'
+		foreach([
+			'/* Done. */', '/* Done. */ /* Also done. */'
 			, "/* Done.\n\nStill done. */"
 		] as $comment)
 		{

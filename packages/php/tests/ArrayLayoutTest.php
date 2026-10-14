@@ -16,6 +16,145 @@ use SeanMorris\NoSaccadeStyle\Fixers;
 final class ArrayLayoutTest extends TestCase
 {
 
+	public function testExpandedIndexedArraysStartBelowTheOpeningBracket(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$points[] = [$sprite->x + $x * $cos - $y * $sin
+    , $sprite->y + $x * $sin + $y * $cos
+];
+PHP
+		);
+
+		self::assertStringContainsString("[\n\t\$sprite->x + \$x * \$cos - \$y * \$sin\n", $output);
+
+		self::assertStringContainsString(
+			"\n\t, \$sprite->y + \$x * \$sin + \$y * \$cos\n];"
+			, $output
+		);
+	}
+
+	public function testFirstMultilineConstructorGetsItsOwnArrayItemIndent(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+return new CardSequence([new Card(
+    'loading'
+    , 'Loading the demo'
+    , 'Discovering title assets...'
+    , duration: 1
+    , fadeIn: .25
+    , fadeOut: .25
+    , skippable: false
+    , ready: $ready
+)
+    , $title
+]);
+PHP
+		);
+
+		self::assertStringContainsString("new CardSequence([\n\tnew Card(\n\t\t'loading'", $output);
+		self::assertStringContainsString("\n\t)\n\t, \$title\n]);", $output);
+	}
+
+	public function testGroupedIndexedRowsKeepTheirGroupsBelowTheOpener(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$matrix = [1, 0, 0
+    , 0, 1, 0
+    , 0, 0, 1];
+PHP
+		);
+
+		self::assertStringContainsString("[\n\t1, 0, 0\n\t, 0, 1, 0\n\t, 0, 0, 1\n];", $output);
+	}
+
+	public function testNestedIndexedArraysHaveIndependentOpeningAndClosingRails(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$rows = [[$first
+    , $second]
+    , [$third
+        , $fourth]
+];
+PHP
+		);
+
+		self::assertStringContainsString("[\n\t[\n\t\t\$first\n\t\t, \$second\n\t]", $output);
+		self::assertStringContainsString("\n\t, [\n\t\t\$third\n\t\t, \$fourth\n\t]\n];", $output);
+	}
+
+	public function testIndexedLegacyArraysAndDestructuringUseTheSameBoundaries(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$items = array($first
+    , $second);
+list($left
+    , $right) = $items;
+[, $x
+    , $y] = $items;
+PHP
+		);
+
+		self::assertStringContainsString("array(\n\t\$first\n\t, \$second\n);", $output);
+		self::assertStringContainsString("list(\n\t\$left\n\t, \$right\n) =", $output);
+		self::assertStringContainsString("[\n\t, \$x\n\t, \$y\n] =", $output);
+	}
+
+	public function testIndexedArrayCommentsAndLiteralContentsStayIntact(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$items = [/* Explain the first value. */ $first
+    , $second // Explain the second value.
+];
+$text = [<<<'TEXT'
+    Literal spaces, commas, and brackets: [ ]
+TEXT
+    , "a\nb"
+];
+$slot = $items[
+    $offset
+];
+PHP
+		);
+
+		self::assertStringContainsString("[\n\t/* Explain the first value. */ \$first", $output);
+
+		self::assertStringContainsString(
+			"\n\t, \$second // Explain the second value.\n];"
+			, $output
+		);
+	}
+
+	public function testShortInlineArraysStayInlineAndExplicitExpandedArraysStayExpanded(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$inline = [$first, $second];
+$expanded = [$first
+    , $second];
+PHP
+		);
+
+		self::assertStringContainsString('$inline = [$first, $second];', $output);
+		self::assertStringContainsString("\$expanded = [\n\t\$first\n\t, \$second\n];", $output);
+	}
+
+	public function testLongInlineIndexedArraysConvergeOnAnExpandedOpening(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+$values = [$firstLongIdentifierForTheCollisionPoint, $secondLongIdentifierForTheCollisionPoint, $thirdLongIdentifierForTheCollisionPoint];
+PHP
+		);
+
+		self::assertStringContainsString("[\n\t\$firstLongIdentifierForTheCollisionPoint", $output);
+	}
+
 	public function testExpandedMapsPutEveryEntryOnItsOwnLine(): void
 	{
 		$output = $this->format(<<<'PHP'

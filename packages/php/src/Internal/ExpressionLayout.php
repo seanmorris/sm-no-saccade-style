@@ -211,8 +211,9 @@ final class ExpressionLayout
 				, $assign->var->getEndFilePos() + 1 - $assign->getStartFilePos()
 			);
 
-			$edits[$assign->getStartFilePos()] = [$value->getStartFilePos()
-			, $text . "\n" . $indent
+			$edits[$assign->getStartFilePos()] = [
+				$value->getStartFilePos()
+				, $text . "\n" . $indent
 				. $left . ' = '
 			];
 		});
@@ -523,13 +524,16 @@ final class ExpressionLayout
 		$messages = [];
 
 		self::visit($code, static function(Node $node) use (&$messages): void {
-			if(!$node instanceof Node\Arg || !$node->value instanceof Expr\Closure) return;
+			$value = match(true)
+			{
+				$node instanceof Node\Arg => $node->value,
+				$node instanceof Expr\BinaryOp\Coalesce => $node->right,
+				default => null
+			};
 
-			$value = $node->value;
+			if(!$value instanceof Expr\Closure && !$value instanceof Expr\ArrowFunction) return;
 
-			if($value->getStartLine() === $value->getEndLine() || (!$value->getDocComment()
-				&& !$node->getDocComment()
-			))
+			if(!$value->getDocComment() && (!$node instanceof Node\Arg || !$node->getDocComment()))
 			return;
 
 			$messages[] = [
@@ -537,7 +541,7 @@ final class ExpressionLayout
 				, 'severity' => 'warning'
 				, 'rule' => 'documented-callback'
 				, 'message' =>
-				'Consider assigning this documented multiline callback to a named local before passing it.'
+				'Consider assigning this documented callback to a named local before using it in this expression.'
 			];
 		});
 

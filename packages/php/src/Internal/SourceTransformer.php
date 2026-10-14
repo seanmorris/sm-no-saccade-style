@@ -358,8 +358,9 @@ final class SourceTransformer
 			if(substr_count($between, "\n") >= $newlines) continue;
 
 			$indent = self::lineIndent($code, $first->line);
-			$replacements[] = [self::tokenEnd($left), $first->pos
-			, str_repeat("\n", $newlines)
+			$replacements[] = [
+				self::tokenEnd($left), $first->pos
+				, str_repeat("\n", $newlines)
 				. $indent
 			];
 		}
@@ -385,14 +386,15 @@ final class SourceTransformer
 
 				if(in_array(
 					$token->id
-					, [T_FUNCTION
-					, T_CLASS
-					, T_INTERFACE
-					, T_TRAIT
-					, T_ENUM
-					, T_TRY
-					, T_CATCH
-					, T_FINALLY
+					, [
+						T_FUNCTION
+						, T_CLASS
+						, T_INTERFACE
+						, T_TRAIT
+						, T_ENUM
+						, T_TRY
+						, T_CATCH
+						, T_FINALLY
 						, T_SWITCH, T_MATCH
 					]
 					, true
@@ -491,8 +493,9 @@ final class SourceTransformer
 			$gap = substr($code, $start, $end - $start);
 
 			if(trim($gap) === '' && !str_contains($gap, "\n"))
-			$replacements[$start] = [$start
-			, $end
+			$replacements[$start] = [
+				$start
+				, $end
 				, "\n"
 			];
 		};
@@ -2341,7 +2344,8 @@ final class SourceTransformer
 
 				if($between !== $replacement)
 				{
-					$replacements[] = [self::tokenEnd($tokens[$previous]), $token->pos
+					$replacements[] = [
+						self::tokenEnd($tokens[$previous]), $token->pos
 						, $replacement
 					];
 				}

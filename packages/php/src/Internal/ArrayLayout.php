@@ -10,7 +10,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 use SeanMorris\NoSaccadeStyle\Diagnostics;
 
-/** Lay out PHP maps and their containing expressions without rewriting values. */
+/** Lay out PHP arrays and their containing expressions without rewriting values. */
 final class ArrayLayout
 {
 
@@ -48,7 +48,7 @@ final class ArrayLayout
 		if($actual !== $text) $edits[$start] = [$end, $text];
 	}
 
-	/** Expand keyed arrays before line wrapping can split their short values. */
+	/** Align expanded arrays, and expand maps before wrapping their short values. */
 	public static function maps(string $code, array $tokens, array $pairs, int $max): string
 	{
 		$positions = self::positions($tokens);
@@ -64,7 +64,12 @@ final class ArrayLayout
 
 				if($node->getStartFilePos() < $covered || !$node->items) return;
 
-				if(!array_filter($node->items, static fn($item) => $item?->key !== null)) return;
+				$keyed = (bool) array_filter(
+					$node->items
+					, static fn($item) => $item?->key !== null
+				);
+
+				if(!$keyed && $node->getStartLine() === $node->getEndLine()) return;
 
 				$close = $positions[$node->getEndFilePos()] ?? null;
 				$open = $pairs[$close] ?? null;
@@ -111,8 +116,9 @@ final class ArrayLayout
 					while(isset($tokens[$end]) && $tokens[$end]->pos <= $item->getEndFilePos())
 					$end++;
 
-					if($index)
-					{
+					if($index && ($keyed || $items[$index - 1]->getEndLine() !== $item
+						->getStartLine()
+					)){
 						$left = $items[$index - 1]->getEndFilePos() + 1;
 						$comma = $start - 1;
 
@@ -187,6 +193,9 @@ final class ArrayLayout
 							}
 						}
 					}
+
+					// Indexed arrays keep their deliberate row grouping and inner expressions.
+					if(!$keyed) continue;
 
 					$flat = ReadableLayout::inline($tokens, $start, $end);
 
