@@ -33,6 +33,7 @@ export default {
 		const controls = [];
 		const concats = [];
 		const binaries = [];
+		const assignments = [];
 		const declarations = [];
 
 		function block(node)
@@ -55,6 +56,7 @@ export default {
 			}
 			, NewExpression: node => calls.push(node)
 			, VariableDeclaration: node => declarations.push(node)
+			, AssignmentExpression: node => assignments.push(node)
 			, BlockStatement: block
 			, ClassBody: block
 			, SwitchStatement: block
@@ -257,9 +259,26 @@ export default {
 
 					if(operators.length) cut = Math.max(...operators.map(token => token.range[0]));
 
+					if(cut === null)
+					{
+						const equals = assignments.filter(
+							node => node.right.type === 'CallExpression'
+								&& node.right.arguments.every(
+									argument => ['Identifier', 'Literal'].includes(argument.type)
+								)
+						).map(node => source.getTokenBefore(node.right))
+							.find(
+								token => token?.value === '=' && token.loc.start.line === index + 1
+									&& columns(source.text.slice(start, token.range[1]), tabWidth)
+										<= max
+							);
+
+						if(equals) cut = equals.range[1];
+					}
+
 					for(const token of source.ast.tokens)
 					{
-						if(operators.length) break;
+						if(cut !== null) break;
 
 						if(token.loc.start.line !== index + 1 || token.loc.end.line !== index
 							+ 1

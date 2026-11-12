@@ -14,6 +14,17 @@ function sharedExpressionLine(source, node, line, max, tabWidth)
 		)
 		return true;
 
+		if(parent.type === 'AssignmentExpression' && parent.operator === '='
+			&& (node === parent.right || node.range[1] <= parent.left.range[1])
+			&& node.arguments.every(argument => ['Identifier', 'Literal'].includes(argument.type))
+		){
+			const equals = source.getTokenBefore(parent.right);
+
+			if(equals?.loc.start.line === line && equals.value === '='
+				&& columns(source.lines[line - 1].slice(0, equals.loc.end.column), tabWidth) <= max
+			) return true;
+		}
+
 		if(!['LogicalExpression', 'BinaryExpression'].includes(parent.type)) continue;
 
 		const operator = source.getFirstTokenBetween(

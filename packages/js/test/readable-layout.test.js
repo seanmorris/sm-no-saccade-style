@@ -177,6 +177,23 @@ const longElse = await format(`export async function pick(source, options) {
 
 assert.match(longElse, /\n\telse\n\tcode =/u);
 
+const assignment = await format(`export function report(dbg, $, enabled) {
+\tif(enabled)
+\t{
+\t\tdbg.addEventListener('complete', e => {
+\t\t\tif(e.detail.status === 'error')
+\t\t\t{
+\t\t\t\t$('#asset-status').textContent = e.detail.diagnostics.map(d => d.message).join('\\n');
+\t\t\t}
+\t\t});
+\t}
+}
+`
+);
+
+assert.match(assignment, /\$\('#asset-status'\)/u);
+assert.match(assignment, /\.join\('\\n'\)/u);
+
 for(const indent of ['\t', '  '])
 {
 	const declaration = await format(
