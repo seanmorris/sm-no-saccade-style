@@ -2,6 +2,12 @@
 
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
+## 0.2.1
+
+This patch fixes JavaScript `--fix` output for long control statements with unbraced bodies in space-indented files. The formatter now reports and repairs the split body's indentation, including output from an earlier run that lint previously missed. PHP and public APIs are unchanged.
+
+After the change is merged and CI passes, tag the `master` merge commit as `v0.2.1` and push the tag to trigger npm publishing. Packagist imports the same tag.
+
 ## 0.2.0
 
 This release adds configurable line limits, declaration and statement spacing, complete inline or vertical parameter lists, expanded array/object layouts, and aligned closing delimiters. PHP and JavaScript share the layout conventions; the default limit is 100 columns and consumers can select 120. Readability warnings suggest separating long blocks, and PHP warns about documented callbacks that would read better as named locals. Existing public exports, rule names, and runtime requirements remain available.

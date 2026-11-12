@@ -120,6 +120,39 @@ assert.match(multiTry, /try\n\{\n\trun\(\);\n\}/u);
 const stacked = 'for(const item of items)\nif(item.enabled)\n{\n\trun(item);\n}\n';
 assert.equal(await format(stacked), stacked);
 
+for(const spaces of ['  ', '    '])
+{
+	const output = await format(`export async function stage(source, target, names, copy, join) {
+${spaces}for(const name of names) if(name.endsWith('.mjs')&&!name.startsWith('php8.'))await copy(join(source,name),join(target,name));
+}
+`
+	);
+
+	assert.match(output, /\n\tfor\(const name of names\)\n\tif\(/u);
+	assert.match(output, /\n\tawait copy\(/u);
+
+	const callback = await format(`export async function stage(source, target, names, copy, join) {
+${spaces}for(const name of names)await copy(join(source,name),join(target,name)).catch(error=>{if(error.code!=='ENOENT')throw error;});
+}
+`
+	);
+
+	assert.match(callback, /\n\tfor\(const name of names\)\n\tawait copy\(/u);
+	assert.match(callback, /\n\t\tif\(error\.code/u);
+}
+
+const unrepaired = `function work()
+{
+\tfor(const item of items)
+  if(item.enabled)
+  run(item);
+}
+`;
+
+const repaired = await format(unrepaired);
+
+assert.match(repaired, /\n\tfor\(const item of items\)\n\tif\(item.enabled\)\n\trun\(item\);/u);
+
 await format('if(ready){ let value = 1; use(value); } else { fallback(); }\n');
 await format('async function work(){ for await(const item of items){ use(item); } }\n');
 await format('const text = `line one\n  line two`;\nif(ready){ /* keep */ use(text); }\n');
@@ -128,6 +161,12 @@ const checking = new ESLint({
 	overrideConfigFile: true
 	, overrideConfig: plugin.configs.recommended
 });
+
+const [unfixed] = await checking.lintText(unrepaired, { filePath: 'unbraced.js' });
+assert.ok(unfixed.messages.some(message => message.message.includes('Unbraced control bodies')));
+
+const [fixed] = await checking.lintText(repaired, { filePath: 'unbraced.js' });
+assert.equal(fixed.errorCount, 0, JSON.stringify(fixed.messages));
 
 const [run] = await checking.lintText('work();\n'.repeat(11), { filePath: 'runs.js' });
 assert.equal(run.warningCount, 1);
