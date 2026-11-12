@@ -16,6 +16,66 @@ use SeanMorris\NoSaccadeStyle\Fixers;
 final class ExpressionLayoutTest extends TestCase
 {
 
+	public function testLongOffsetExpressionWrapsAndAlignsItsClosingBracket(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+function lookup($data, $firstConditionWithAnEspeciallyLongVariableName, $secondConditionWithAnEspeciallyLongVariableName, $thirdConditionWithAnEspeciallyLongVariableName)
+{
+	$result = $data[$firstConditionWithAnEspeciallyLongVariableName && $secondConditionWithAnEspeciallyLongVariableName && $thirdConditionWithAnEspeciallyLongVariableName];
+}
+PHP
+		);
+
+		self::assertStringContainsString(
+			"\t\$result = \$data[\$firstConditionWithAnEspeciallyLongVariableName"
+			, $output
+		);
+
+		self::assertStringContainsString(
+			"\n\t\t&& \$thirdConditionWithAnEspeciallyLongVariableName\n\t];"
+			, $output
+		);
+	}
+
+	public function testLongBooleanArgumentKeepsArrayOffsetsOnOneLine(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+verify($portMap->things[5]['flags']['single'] && !$portMap->things[5]['flags']['deathmatch'] && $portMap->things[8]['flags']['deathmatch'], 'Hexen game mode bits');
+PHP
+		);
+
+		self::assertStringContainsString("\$portMap->things[8]['flags']['deathmatch']", $output);
+	}
+
+	public function testNestedCallsKeepArrayOffsetsOnOneLine(): void
+	{
+		$output = $this->format(<<<'PHP'
+<?php
+function beam(array $segments, $registry, bool $first, float $firstZOffset): void
+{
+	foreach($segments as $segment)
+	{
+		$registry->create(new BeamEffect(
+			new WorldPoint(
+				$segment['x'], $segment['y'], $segment['z'] - ($first ? $firstZOffset : 0)
+			)
+			, new WorldPoint(
+				$segment['x'] + $segment['dx']
+				, $segment['y'] + $segment['dy']
+				, $segment['z'] + $segment['dz']
+			)
+			, .75, 8
+		));
+	}
+}
+PHP
+		);
+
+		self::assertStringContainsString("\$segment['z'] + \$segment['dz']", $output);
+	}
+
 	public function testConcatenationSpacingPreservesLiteralContents(): void
 	{
 		$output = $this->format("<?php\n\$label = 'a.b'.\$name.'.c';\n");
