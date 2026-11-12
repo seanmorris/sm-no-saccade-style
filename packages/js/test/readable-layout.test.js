@@ -9,7 +9,7 @@ const eslint = new ESLint({
 	, fix: true
 });
 
-async function format(input)
+async function format(input, allowDeclarationSplit = false)
 {
 	const [result] = await eslint.lintText(input, { filePath: 'layout.js' });
 	assert.equal(result.errorCount, 0, JSON.stringify(result.messages));
@@ -24,6 +24,7 @@ async function format(input)
 	})
 		.tokens.map(({ type, value }) => [type, value]);
 
+	if(!allowDeclarationSplit)
 	assert.deepEqual(tokens(output), tokens(input), 'Layout must preserve every executable token.');
 
 	const ast = code => JSON.parse(JSON.stringify(parse(code, {
@@ -32,6 +33,7 @@ async function format(input)
 	}), (key, value) => ['start', 'end', 'loc', 'range', 'raw'].includes(key) ? undefined : value
 	));
 
+	if(!allowDeclarationSplit)
 	assert.deepEqual(ast(output), ast(input), 'Layout must preserve the parsed program.');
 
 	return output;
@@ -152,6 +154,43 @@ const unrepaired = `function work()
 const repaired = await format(unrepaired);
 
 assert.match(repaired, /\n\tfor\(const item of items\)\n\tif\(item.enabled\)\n\trun\(item\);/u);
+
+const chained = await format(`export function pick(source, options) {
+  let code;
+  if(typeof source?.getCode === 'function') code = source.getCode();
+  else if(source?.nodeType) code = 'value' in source ? source.value : source.textContent;
+  else code = typeof options.code === 'function' ? options.code() : options.code ?? '';
+  return code;
+}
+`
+);
+
+assert.match(chained, /\n\telse code =/u);
+assert.doesNotMatch(chained, /\n  else/u);
+
+const longElse = await format(`export async function pick(source, options) {
+  if(source?.nodeType) code = source.textContent;
+  else code = typeof options.code === 'function' ? await options.code(source, options) : options.code ?? '';
+}
+`
+);
+
+assert.match(longElse, /\n\telse\n\tcode =/u);
+
+for(const indent of ['\t', '  '])
+{
+	const declaration = await format(
+		`export async function load(fs, path, source, loader, manifest) {
+${indent}const glue=await fs.readFile(path.join(source,loader),'utf8'),bytes=await fs.readFile(path.join(source,manifest.wasm));
+${indent}return [glue, bytes];
+}
+`
+		, true
+	);
+
+	assert.match(declaration, /const glue = await fs\.readFile\(/u);
+	assert.match(declaration, /\n\tconst bytes = await fs\.readFile\(/u);
+}
 
 await format('if(ready){ let value = 1; use(value); } else { fallback(); }\n');
 await format('async function work(){ for await(const item of items){ use(item); } }\n');
