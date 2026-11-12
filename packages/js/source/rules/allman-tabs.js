@@ -439,6 +439,29 @@ export default {
 
 		function checkUnbracedBodyIndent(node)
 		{
+			if(node.type === 'IfStatement' && node.alternate)
+			{
+				const keyword = sourceCode.getTokenBefore(node.alternate);
+
+				const prefix = sourceCode.lines[keyword.loc.start.line - 1].slice(
+					0, keyword.loc.start.column
+				);
+
+				const indent = getTokenLineIndent(sourceCode, sourceCode.getFirstToken(node));
+
+				if(keyword.value === 'else' && /^[\t ]+$/u.test(prefix) && prefix !== indent)
+				{
+					context.report({
+						loc: keyword.loc
+						, message: 'Else should align with its control statement.'
+						, fix: fixer => fixer.replaceTextRange(
+							[keyword.range[0] - prefix.length, keyword.range[0]]
+							, indent
+						)
+					});
+				}
+			}
+
 			const bodies = node.type === 'IfStatement'
 				? [node.consequent, node.alternate]
 				: [node.body];

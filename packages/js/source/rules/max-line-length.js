@@ -33,6 +33,7 @@ export default {
 		const controls = [];
 		const concats = [];
 		const binaries = [];
+		const declarations = [];
 
 		function block(node)
 		{
@@ -53,6 +54,7 @@ export default {
 				controls.push(child);
 			}
 			, NewExpression: node => calls.push(node)
+			, VariableDeclaration: node => declarations.push(node)
 			, BlockStatement: block
 			, ClassBody: block
 			, SwitchStatement: block
@@ -63,6 +65,48 @@ export default {
 				let covered = -1;
 				const ranges = [];
 				const boundaries = new Set();
+
+				for(const declaration of declarations)
+				{
+					if(declaration.declarations.length < 2
+						|| declaration.parent.type === 'ForStatement'
+						|| declaration.parent.type === 'ForInStatement'
+						|| declaration.parent.type === 'ForOfStatement'
+						|| declaration.parent.type === 'ExportNamedDeclaration'
+					) continue;
+
+					const line = declaration.loc.start.line;
+
+					if(columns(source.lines[line - 1], tabWidth) <= max) continue;
+
+					const first = declaration.declarations[0];
+					const second = declaration.declarations[1];
+
+					const comma = source.getFirstTokenBetween(
+						first
+						, second
+						, token => token.value === ','
+					);
+
+					if(!comma || comma.loc.start.line !== second.loc.start.line) continue;
+
+					const indent = source.lines[line - 1].match(/^[\t ]*/u)[0];
+					const range = [comma.range[0], second.range[0]];
+					const gap = source.text.slice(comma.range[1], second.range[0]);
+
+					if(!/^\s*$/u.test(gap)) continue;
+
+					wrapped.add(line);
+					ranges.push(range);
+
+					context.report({
+						node: declaration
+						, message: 'Put long declarations on separate statements.'
+						, fix: fixer => fixer.replaceTextRange(
+							range, `;\n${indent}${declaration.kind} `
+						)
+					});
+				}
 
 				for(const body of controls)
 				{

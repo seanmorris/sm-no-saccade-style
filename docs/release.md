@@ -2,6 +2,12 @@
 
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
+## 0.2.2
+
+This patch aligns the final `else` in unbraced chains after autofixing space-indented code and makes long declarations with multiple initializers converge by separating their declarators. It fixes issues #11 and #12 without changing the public API.
+
+After merging and checking CI, tag the `master` merge commit as `v0.2.2` and push the tag. GitHub Actions publishes the npm package, and Packagist imports the same tag.
+
 ## 0.2.1
 
 This patch fixes JavaScript `--fix` output for long control statements with unbraced bodies in space-indented files. The formatter now reports and repairs the split body's indentation, including output from an earlier run that lint previously missed. PHP and public APIs are unchanged.
