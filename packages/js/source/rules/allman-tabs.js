@@ -437,6 +437,37 @@ export default {
 			if(node.type === 'DoWhileStatement') separate(node.body, 'while');
 		}
 
+		function checkUnbracedBodyIndent(node)
+		{
+			const bodies = node.type === 'IfStatement'
+				? [node.consequent, node.alternate]
+				: [node.body];
+
+			const parent = sourceCode.getFirstToken(node);
+
+			for(const body of bodies)
+			{
+				if(!body || body.type === 'BlockStatement') continue;
+
+				const token = sourceCode.getFirstToken(body);
+				const line = sourceCode.lines[token.loc.start.line - 1];
+				const prefix = line.slice(0, token.loc.start.column);
+
+				if(!/^[\t ]* [\t ]*$/u.test(prefix)) continue;
+
+				const indent = getTokenLineIndent(sourceCode, parent);
+
+				context.report({
+					node: body
+					, message: 'Unbraced control bodies should use tab indentation.'
+					, fix: fixer => fixer.replaceTextRange(
+						[token.range[0] - prefix.length, token.range[0]]
+						, indent
+					)
+				});
+			}
+		}
+
 		function stripSpaceBeforeOpeningBrace(node)
 		{
 			const openingBrace = getOpeningBraceToken(sourceCode, node);
@@ -558,6 +589,15 @@ export default {
 				IfStatement: checkAttachedClauses
 				, TryStatement: checkAttachedClauses
 				, DoWhileStatement: checkAttachedClauses
+			},
+			{
+				IfStatement: checkUnbracedBodyIndent
+				, ForStatement: checkUnbracedBodyIndent
+				, ForInStatement: checkUnbracedBodyIndent
+				, ForOfStatement: checkUnbracedBodyIndent
+				, WhileStatement: checkUnbracedBodyIndent
+				, DoWhileStatement: checkUnbracedBodyIndent
+				, WithStatement: checkUnbracedBodyIndent
 			},
 			{
 				'Program:exit': checkClosingDelimiterIndent
