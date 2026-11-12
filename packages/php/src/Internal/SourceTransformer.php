@@ -122,9 +122,14 @@ final class SourceTransformer
 		$interpolated = self::interpolationTokenMap($tokens);
 		$byLine = [];
 
-		foreach($tokens as $index => $token)
+		for($index = 0, $count = count($tokens); $index < $count; $index++)
 		{
+			$token = $tokens[$index];
+
 			if(isset($interpolated[$index])) continue;
+
+			// Keep the opening of an offset attached while allowing breaks in its expression.
+			if($token->text === '[' && !self::isArrayBracket($tokens, $index)) continue;
 
 			if(in_array($token->text, [',', '&&', '||', '??', '.', '->', '?->'], true))
 			{
@@ -156,11 +161,15 @@ final class SourceTransformer
 			$prefix = '';
 
 			$concats = [];
+			$logical = [];
 
 			foreach($candidates as $candidate)
-			if(($code[$candidate[0]] ?? '') === '.')
 			{
-				$concats[] = $candidate;
+				$operator = substr($code, $candidate[0], 2);
+
+				if(in_array($operator, ['&&', '||', '??'], true)) $logical[] = $candidate;
+
+				if(($code[$candidate[0]] ?? '') === '.') $concats[] = $candidate;
 			}
 
 			while(\SeanMorris\NoSaccadeStyle\Diagnostics::columns(
@@ -169,16 +178,23 @@ final class SourceTransformer
 			){
 				$chosen = null;
 
-				foreach($concats ?: $candidates as [$position])
+				foreach([$logical, $concats, $candidates] as $preferred)
 				{
-					if($position <= $start || trim(substr($code, $start, $position - $start)) === ''
-					) continue;
+					foreach($preferred as [$position])
+					{
+						if($position <= $start || trim(
+							substr($code, $start, $position - $start)
+						) === ''
+						) continue;
 
-					$width = \SeanMorris\NoSaccadeStyle\Diagnostics::columns(
-						$prefix . substr($code, $start, $position - $start)
-					);
+						$width = \SeanMorris\NoSaccadeStyle\Diagnostics::columns(
+							$prefix . substr($code, $start, $position - $start)
+						);
 
-					if($width <= $maxLineLength) $chosen = $position;
+						if($width <= $maxLineLength) $chosen = $position;
+					}
+
+					if($chosen !== null) break;
 				}
 
 				if($chosen === null) break;
