@@ -2,6 +2,12 @@
 
 Publish releases by pushing a version tag that matches `vX.Y.Z`. The tag version must match `packages/js/package.json`.
 
+## 0.2.3
+
+This patch fixes issue #14: long assignments now wrap at the assignment boundary while keeping short calls intact, and repeated autofixes converge. Public APIs are unchanged.
+
+After merging and checking CI, tag the `master` merge commit as `v0.2.3` and push the tag. GitHub Actions publishes the npm package, and Packagist imports the same tag.
+
 ## 0.2.2
 
 This patch aligns the final `else` in unbraced chains after autofixing space-indented code and makes long declarations with multiple initializers converge by separating their declarators. It fixes issues #11 and #12 without changing the public API.
